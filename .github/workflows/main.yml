@@ -11,8 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # ==============================
+      # GitHub 저장소 가져오기
+      # ==============================
+
       - name: Checkout
         uses: actions/checkout@v4
+
+
+      # ==============================
+      # Java 17
+      # ==============================
 
       - name: Java 17 설치
         uses: actions/setup-java@v4
@@ -20,15 +30,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # ─────────────────────────────
+
+      # ==============================
       # Android 프로젝트 자동 생성
-      # ─────────────────────────────
+      # ==============================
 
       - name: Android 프로젝트 만들기
         shell: bash
         run: |
+
           mkdir -p app/src/main/java/com/example/rpc
           mkdir -p app/src/main/assets
+          mkdir -p app/src/main/res/values
+
+
+          # --------------------------
+          # settings.gradle
+          # --------------------------
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
@@ -41,6 +59,7 @@ jobs:
 
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
               repositories {
                   google()
                   mavenCentral()
@@ -48,8 +67,14 @@ jobs:
           }
 
           rootProject.name = "RPC"
+
           include(":app")
           EOF
+
+
+          # --------------------------
+          # build.gradle
+          # --------------------------
 
           cat > build.gradle <<'EOF'
           plugins {
@@ -57,42 +82,72 @@ jobs:
           }
           EOF
 
+
+          # --------------------------
+          # app/build.gradle
+          # --------------------------
+
           cat > app/build.gradle <<'EOF'
           plugins {
               id 'com.android.application'
           }
 
           android {
+
               namespace 'com.example.rpc'
+
               compileSdk 35
 
               defaultConfig {
+
                   applicationId 'com.example.rpc'
+
                   minSdk 23
+
                   targetSdk 35
+
                   versionCode 1
+
                   versionName '1.0'
               }
           }
           EOF
 
+
+          # --------------------------
+          # AndroidManifest.xml
+          # --------------------------
+
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+          <manifest
+              xmlns:android="http://schemas.android.com/apk/res/android">
 
               <application
+
                   android:theme="@style/AppTheme"
-                  android:label="착한 사람만 이길 수 있는 가위바위보"
+
+                  android:label="절대 못 이기는 가위바위보"
+
                   android:resizeableActivity="true">
 
                   <activity
+
                       android:name=".MainActivity"
+
                       android:screenOrientation="portrait"
+
                       android:exported="true">
 
                       <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
+
+                          <action
+                              android:name="android.intent.action.MAIN" />
+
+                          <category
+                              android:name="android.intent.category.LAUNCHER" />
+
                       </intent-filter>
 
                   </activity>
@@ -102,29 +157,47 @@ jobs:
           </manifest>
           EOF
 
-          mkdir -p app/src/main/res/values
+
+          # --------------------------
+          # styles.xml
+          # --------------------------
 
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
+
           <resources>
 
-              <style name="AppTheme"
+              <style
+                  name="AppTheme"
                   parent="android:style/Theme.Material.Light.NoActionBar">
 
                   <item name="android:fontFamily">sans</item>
-                  <item name="android:colorAccent">#dc2626</item>
-                  <item name="android:navigationBarColor">#ffffff</item>
-                  <item name="android:statusBarColor">#ffffff</item>
-                  <item name="android:windowLightStatusBar">true</item>
+
+                  <item name="android:colorAccent">
+                      #dc2626
+                  </item>
+
+                  <item name="android:navigationBarColor">
+                      #ffffff
+                  </item>
+
+                  <item name="android:statusBarColor">
+                      #ffffff
+                  </item>
+
+                  <item name="android:windowLightStatusBar">
+                      true
+                  </item>
 
               </style>
 
           </resources>
           EOF
 
-          # ─────────────────────────────
-          # Android WebView
-          # ─────────────────────────────
+
+          # ==============================
+          # WebView MainActivity
+          # ==============================
 
           cat > app/src/main/java/com/example/rpc/MainActivity.java <<'EOF'
           package com.example.rpc;
@@ -139,37 +212,54 @@ jobs:
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
+
                   super.onCreate(savedInstanceState);
 
-                  WebView webView = new WebView(this);
+                  WebView webView =
+                      new WebView(this);
 
-                  webView.setWebViewClient(new WebViewClient());
+                  webView.setWebViewClient(
+                      new WebViewClient()
+                  );
 
-                  WebSettings settings = webView.getSettings();
+                  WebSettings settings =
+                      webView.getSettings();
+
                   settings.setJavaScriptEnabled(true);
+
                   settings.setDomStorageEnabled(true);
+
                   settings.setBuiltInZoomControls(false);
+
                   settings.setDisplayZoomControls(false);
 
                   webView.setVerticalScrollBarEnabled(false);
+
                   webView.setHorizontalScrollBarEnabled(false);
 
                   setContentView(webView);
 
-                  webView.loadUrl("file:///android_asset/index.html");
+                  webView.loadUrl(
+                      "file:///android_asset/index.html"
+                  );
               }
           }
           EOF
 
-          # ─────────────────────────────
-          # 실제 게임
-          # ─────────────────────────────
+
+          # ==============================
+          # 실제 게임 HTML
+          # ==============================
 
           cat > app/src/main/assets/index.html <<'EOF'
           <!DOCTYPE html>
+
           <html lang="ko">
+
           <head>
+
           <meta charset="UTF-8">
+
           <meta
               name="viewport"
               content="width=device-width,
@@ -177,41 +267,63 @@ jobs:
                        maximum-scale=1.0,
                        user-scalable=no">
 
-          <title>착한 사람만 이길 수 있는 가위바위보</title>
+          <title>
+              절대 못 이기는 가위바위보
+          </title>
+
 
           <style>
 
           * {
+
               box-sizing: border-box;
+
               -webkit-tap-highlight-color: transparent;
           }
 
+
           html,
           body {
+
               margin: 0;
+
               padding: 0;
+
               width: 100%;
+
               height: 100%;
+
               overflow: hidden;
+
               font-family:
                   system-ui,
                   -apple-system,
                   BlinkMacSystemFont,
                   "Segoe UI",
                   sans-serif;
+
               background: #f7f7f8;
           }
 
+
           body {
+
               display: flex;
+
               justify-content: center;
+
               align-items: center;
           }
 
+
           .game {
+
               width: 100%;
+
               max-width: 600px;
+
               height: 100dvh;
+
               padding:
                   max(14px, env(safe-area-inset-top))
                   14px
@@ -219,384 +331,737 @@ jobs:
                   14px;
 
               display: flex;
+
               flex-direction: column;
+
               gap: 8px;
           }
 
+
+          /* =========================
+             상단
+          ========================= */
+
           .top {
+
               height: 55px;
+
               display: flex;
+
               justify-content: space-between;
+
               align-items: center;
           }
 
+
           .title {
+
               font-size: 20px;
+
+              line-height: 1.15;
+
               font-weight: 900;
+
               color: #18181b;
           }
 
+
           .round {
+
               font-size: 13px;
+
               font-weight: 800;
+
               color: #71717a;
           }
 
+
+          /* =========================
+             게임판
+          ========================= */
+
           .arena {
+
               flex: 1;
+
               min-height: 0;
+
               background: white;
+
               border-radius: 22px;
+
               padding: 12px;
+
               display: flex;
+
               flex-direction: column;
+
               box-shadow:
                   0 2px 12px rgba(0,0,0,.06);
           }
 
+
           .names {
+
               display: grid;
+
               grid-template-columns: 1fr 1fr;
+
               text-align: center;
+
               font-size: 16px;
+
               font-weight: 900;
+
               color: #27272a;
+
               padding: 4px 0;
           }
+
 
           .faces {
+
               display: grid;
+
               grid-template-columns: 1fr 1fr;
+
               text-align: center;
-              font-size: clamp(45px, 13vw, 72px);
+
+              font-size:
+                  clamp(45px, 13vw, 72px);
+
               line-height: 1;
+
               padding: 4px 0;
           }
 
+
+          /* =========================
+             손
+          ========================= */
+
           .hands {
+
               flex: 1;
+
               min-height: 0;
+
               display: grid;
+
               grid-template-columns: 1fr 1fr;
+
               align-items: center;
+
               text-align: center;
-              font-size: clamp(65px, 20vw, 105px);
+
+              font-size:
+                  clamp(65px, 20vw, 105px);
+
               line-height: 1;
           }
 
+
           .hand {
-              transition: transform .25s;
+
+              transition:
+                  transform .25s;
           }
+
 
           .shake {
-              animation: shake .16s infinite alternate;
+
+              animation:
+                  shake .16s infinite alternate;
           }
 
+
           @keyframes shake {
+
               from {
-                  transform: translateY(-13px);
+
+                  transform:
+                      translateY(-13px);
               }
 
               to {
-                  transform: translateY(13px);
+
+                  transform:
+                      translateY(13px);
               }
           }
 
+
+          /* =========================
+             결과
+          ========================= */
+
           .result {
+
               height: 65px;
+
               display: flex;
+
               justify-content: center;
+
               align-items: center;
+
               color: #dc2626;
-              font-size: clamp(30px, 9vw, 45px);
+
+              font-size:
+                  clamp(30px, 9vw, 45px);
+
               font-weight: 1000;
           }
 
+
+          /* =========================
+             정보
+          ========================= */
+
           .info {
+
               height: 42px;
+
               text-align: center;
+
               font-size: 13px;
+
               font-weight: 800;
+
               color: #52525b;
           }
 
+
           .score {
+
               text-align: center;
+
               height: 32px;
+
               font-size: 16px;
+
               font-weight: 900;
+
               color: #18181b;
           }
 
+
+          /* =========================
+             버튼
+          ========================= */
+
           .buttons {
+
               display: grid;
-              grid-template-columns: repeat(3, 1fr);
+
+              grid-template-columns:
+                  repeat(3, 1fr);
+
               gap: 7px;
           }
 
+
           button {
+
               height: 62px;
+
               border: 0;
+
               border-radius: 14px;
+
               background: #dc2626;
+
               color: white;
+
               font-size: 15px;
+
               font-weight: 900;
-              box-shadow: 0 4px 0 #991b1b;
+
+              box-shadow:
+                  0 4px 0 #991b1b;
+
+              touch-action: manipulation;
           }
+
 
           button:active {
-              transform: translateY(3px);
-              box-shadow: 0 1px 0 #991b1b;
+
+              transform:
+                  translateY(3px);
+
+              box-shadow:
+                  0 1px 0 #991b1b;
           }
 
+
           button:disabled {
+
               opacity: .42;
           }
 
+
           .restart {
+
               margin-top: 7px;
+
               background: #27272a;
-              box-shadow: 0 4px 0 #09090b;
+
+              box-shadow:
+                  0 4px 0 #09090b;
           }
 
+
           .hint {
+
               text-align: center;
+
               color: #71717a;
+
               font-size: 10px;
+
               height: 20px;
           }
+
+
+          /* =========================
+             작은 화면
+          ========================= */
 
           @media (max-height: 650px) {
 
               .top {
+
                   height: 45px;
               }
 
+
               .faces {
+
                   font-size: 45px;
               }
 
+
               .hands {
+
                   font-size: 70px;
               }
 
+
               .result {
+
                   height: 52px;
               }
 
+
               button {
+
                   height: 52px;
               }
 
           }
 
+
           </style>
+
           </head>
+
 
           <body>
 
+
           <div class="game">
 
+
+              <!-- 상단 -->
+
               <div class="top">
+
                   <div class="title">
-                      착한 사람만 이길 수 있는<br>
+
+                      절대 못 이기는<br>
                       가위바위보
+
                   </div>
 
-                  <div class="round" id="round">
+
+                  <div
+                      class="round"
+                      id="round">
+
                       ROUND 1
+
                   </div>
+
               </div>
+
+
+              <!-- 게임판 -->
 
               <div class="arena">
 
+
+                  <!-- 이름 -->
+
                   <div class="names">
-                      <div>💻 컴퓨터</div>
-                      <div>👤 사람</div>
+
+                      <div>
+                          💻 컴퓨터
+                      </div>
+
+                      <div>
+                          👤 사람
+                      </div>
+
                   </div>
 
+
+                  <!-- 얼굴 -->
+
                   <div class="faces">
-                      <div id="computerFace">🤖</div>
-                      <div id="playerFace">🙂</div>
+
+                      <div id="computerFace">
+                          🤖
+                      </div>
+
+                      <div id="playerFace">
+                          🙂
+                      </div>
+
                   </div>
+
+
+                  <!-- 손 -->
 
                   <div class="hands">
 
                       <div
                           id="computerHand"
                           class="hand">
+
                           ✊
+
                       </div>
+
 
                       <div
                           id="playerHand"
                           class="hand">
+
                           ✊
+
                       </div>
 
                   </div>
 
+
+                  <!-- 결과 -->
+
                   <div
                       id="result"
                       class="result">
+
                       준비!
+
                   </div>
+
+
+                  <!-- 설명 -->
 
                   <div
                       id="info"
                       class="info">
+
                       가위! 바위! 보!
+
                   </div>
+
+
+                  <!-- 점수 -->
 
                   <div
                       id="score"
                       class="score">
+
                       컴퓨터 0 : 0 사람
+
                   </div>
+
 
               </div>
 
+
+              <!-- 선택 버튼 -->
+
               <div class="buttons">
+
 
                   <button
                       id="scissors"
                       onclick="choose('scissors')">
-                      ✌️<br>가위
+
+                      ✌️<br>
+                      가위
+
                   </button>
+
 
                   <button
                       id="rock"
                       onclick="choose('rock')">
-                      ✊<br>바위
+
+                      ✊<br>
+                      바위
+
                   </button>
+
 
                   <button
                       id="paper"
                       onclick="choose('paper')">
-                      ✋<br>보
+
+                      ✋<br>
+                      보
+
                   </button>
 
+
               </div>
+
+
+              <!-- 재시작 -->
 
               <button
                   class="restart"
                   onclick="restartGame()">
+
                   게임 다시 시작
+
               </button>
 
+
               <div class="hint">
+
                   가위! 바위! 보! 동안 선택하세요 · 제한시간 3초
+
               </div>
+
 
           </div>
 
 
           <script>
 
+
+          /* =========================
+             게임 데이터
+          ========================= */
+
+
           const hands = {
+
               rock: "✊",
+
               paper: "✋",
+
               scissors: "✌️"
+
           };
+
 
           const names = {
+
               rock: "바위",
+
               paper: "보",
+
               scissors: "가위"
+
           };
 
+
           let computerScore = 0;
+
           let playerScore = 0;
+
           let round = 0;
+
           let choosing = false;
+
           let timer = null;
+
+          let chantTimer = null;
+
 
           const result =
               document.getElementById("result");
 
+
           const info =
               document.getElementById("info");
+
 
           const score =
               document.getElementById("score");
 
+
           const computerHand =
-              document.getElementById("computerHand");
+              document.getElementById(
+                  "computerHand"
+              );
+
 
           const playerHand =
-              document.getElementById("playerHand");
+              document.getElementById(
+                  "playerHand"
+              );
+
 
           const computerFace =
-              document.getElementById("computerFace");
+              document.getElementById(
+                  "computerFace"
+              );
+
 
           const playerFace =
-              document.getElementById("playerFace");
+              document.getElementById(
+                  "playerFace"
+              );
+
 
           const roundText =
-              document.getElementById("round");
+              document.getElementById(
+                  "round"
+              );
+
+
+          /* =========================
+             버튼
+          ========================= */
 
 
           function buttons(enabled) {
 
-              document.getElementById("scissors").disabled =
-                  !enabled;
+              document.getElementById(
+                  "scissors"
+              ).disabled = !enabled;
 
-              document.getElementById("rock").disabled =
-                  !enabled;
 
-              document.getElementById("paper").disabled =
-                  !enabled;
+              document.getElementById(
+                  "rock"
+              ).disabled = !enabled;
+
+
+              document.getElementById(
+                  "paper"
+              ).disabled = !enabled;
+
           }
+
+
+          /* =========================
+             라운드 시작
+          ========================= */
 
 
           function startRound() {
 
-              clearTimeout(timer);
+              clearInterval(timer);
+
+              clearTimeout(chantTimer);
+
 
               round++;
+
 
               roundText.textContent =
                   "ROUND " + round;
 
+
               choosing = false;
+
 
               buttons(false);
 
-              computerFace.textContent = "🤖";
-              playerFace.textContent = "🙂";
 
-              computerHand.textContent = "✊";
-              playerHand.textContent = "✊";
+              computerFace.textContent =
+                  "🤖";
 
-              computerHand.className = "hand";
-              playerHand.className = "hand";
 
-              result.textContent = "가위!";
-              info.textContent = "준비하세요!";
+              playerFace.textContent =
+                  "🙂";
 
-              setTimeout(() => {
 
-                  result.textContent = "바위!";
+              computerHand.textContent =
+                  "✊";
+
+
+              playerHand.textContent =
+                  "✊";
+
+
+              computerHand.className =
+                  "hand";
+
+
+              playerHand.className =
+                  "hand";
+
+
+              result.textContent =
+                  "가위!";
+
+
+              info.textContent =
+                  "준비하세요!";
+
+
+              /* 가위 */
+
+              chantTimer = setTimeout(() => {
+
+                  result.textContent =
+                      "바위!";
 
               }, 450);
 
-              setTimeout(() => {
 
-                  result.textContent = "보!";
-                  info.textContent = "지금!";
+              /* 바위 */
 
-                  computerHand.classList.add("shake");
-                  playerHand.classList.add("shake");
+              chantTimer = setTimeout(() => {
+
+                  result.textContent =
+                      "보!";
+
+                  info.textContent =
+                      "지금!";
+
+
+                  computerHand.classList.add(
+                      "shake"
+                  );
+
+
+                  playerHand.classList.add(
+                      "shake"
+                  );
 
               }, 900);
 
-              setTimeout(() => {
+
+              /* 선택 가능 */
+
+              chantTimer = setTimeout(() => {
 
                   beginChoice();
 
               }, 1400);
+
           }
+
+
+          /* =========================
+             선택 시작
+          ========================= */
 
 
           function beginChoice() {
@@ -605,24 +1070,28 @@ jobs:
 
               buttons(true);
 
+
               let remaining = 3;
 
+
               info.textContent =
-                  "남은 시간: " +
-                  remaining.toFixed(1) +
-                  "초";
+                  "남은 시간: 3.0초";
+
 
               timer = setInterval(() => {
 
                   remaining -= 0.1;
 
+
                   if (remaining <= 0) {
 
                       clearInterval(timer);
+
                       timeout();
 
                       return;
                   }
+
 
                   info.textContent =
                       "남은 시간: " +
@@ -634,93 +1103,230 @@ jobs:
           }
 
 
+          /* =========================
+             선택
+          ========================= */
+
+
           function choose(player) {
 
               if (!choosing)
                   return;
 
+
               choosing = false;
+
 
               clearInterval(timer);
 
               buttons(false);
 
+
               let computer;
 
+
               /*
-               * 핵심:
+               * =================================
                *
-               * 사람은 절대로 이길 수 없다.
+               * 사람 승리 확률
                *
-               * 같은 것을 내면 무승부
-               * 컴퓨터가 이기는 것도 가능
+               * 0.01%
+               *
+               * 0.0001 = 0.01%
+               *
+               * =================================
                */
 
-              if (player === "scissors") {
 
-                  computer =
-                      Math.random() < 0.5
-                      ? "scissors"
-                      : "rock";
+              const lucky =
+                  Math.random() < 0.0001;
 
-              }
 
-              else if (player === "rock") {
+              if (lucky) {
 
-                  computer =
-                      Math.random() < 0.5
-                      ? "rock"
-                      : "paper";
+                  /*
+                   * 사람에게 이기는 패를
+                   * 컴퓨터가 일부러 냄
+                   */
+
+
+                  if (player === "scissors") {
+
+                      computer = "paper";
+
+                  }
+
+                  else if (player === "rock") {
+
+                      computer = "scissors";
+
+                  }
+
+                  else {
+
+                      computer = "rock";
+
+                  }
+
 
               }
 
               else {
 
-                  computer =
-                      Math.random() < 0.5
-                      ? "paper"
-                      : "scissors";
+                  /*
+                   * 평소에는
+                   *
+                   * 무승부 또는 컴퓨터 승리
+                   */
+
+
+                  if (player === "scissors") {
+
+                      computer =
+                          Math.random() < 0.5
+                          ? "scissors"
+                          : "rock";
+
+                  }
+
+                  else if (player === "rock") {
+
+                      computer =
+                          Math.random() < 0.5
+                          ? "rock"
+                          : "paper";
+
+                  }
+
+                  else {
+
+                      computer =
+                          Math.random() < 0.5
+                          ? "paper"
+                          : "scissors";
+
+                  }
 
               }
 
 
-              computerHand.classList.remove("shake");
-              playerHand.classList.remove("shake");
+              computerHand.classList.remove(
+                  "shake"
+              );
+
+
+              playerHand.classList.remove(
+                  "shake"
+              );
+
+
+              /*
+               * 손 공개
+               */
 
               setTimeout(() => {
+
 
                   computerHand.textContent =
                       hands[computer];
 
+
                   playerHand.textContent =
                       hands[player];
+
+
+                  /*
+                   * 승패 판정
+                   */
 
                   const draw =
                       computer === player;
 
 
+                  const playerWin =
+
+                      (
+                          player === "rock" &&
+                          computer === "scissors"
+                      )
+
+                      ||
+
+                      (
+                          player === "scissors" &&
+                          computer === "paper"
+                      )
+
+                      ||
+
+                      (
+                          player === "paper" &&
+                          computer === "rock"
+                      );
+
+
+                  /*
+                   * 무승부
+                   */
+
                   if (draw) {
+
 
                       result.textContent =
                           "무승부";
 
+
                       computerFace.textContent =
                           "😐";
+
 
                       playerFace.textContent =
                           "😮‍💨";
 
                   }
 
+
+                  /*
+                   * 사람 승리
+                   */
+
+                  else if (playerWin) {
+
+
+                      playerScore++;
+
+
+                      result.textContent =
+                          "승리!";
+
+
+                      computerFace.textContent =
+                          "😭";
+
+
+                      playerFace.textContent =
+                          "😎";
+
+                  }
+
+
+                  /*
+                   * 컴퓨터 승리
+                   */
+
                   else {
 
+
                       computerScore++;
+
 
                       result.textContent =
                           "패배";
 
+
                       computerFace.textContent =
                           "😎";
+
 
                       playerFace.textContent =
                           "😭";
@@ -728,14 +1334,24 @@ jobs:
                   }
 
 
+                  /*
+                   * 결과 설명
+                   */
+
                   info.textContent =
+
                       "컴퓨터 " +
                       names[computer] +
                       " · 사람 " +
                       names[player];
 
 
+                  /*
+                   * 점수
+                   */
+
                   score.textContent =
+
                       "컴퓨터 " +
                       computerScore +
                       " : " +
@@ -743,44 +1359,77 @@ jobs:
                       " 사람";
 
 
+                  /*
+                   * 다음 라운드
+                   */
+
                   setTimeout(() => {
 
                       startRound();
 
                   }, 1800);
 
+
               }, 250);
 
           }
 
 
+          /* =========================
+             시간 초과
+          ========================= */
+
+
           function timeout() {
+
+
+              if (!choosing)
+                  return;
+
 
               choosing = false;
 
+
               buttons(false);
 
+
               computerScore++;
+
 
               computerFace.textContent =
                   "😎";
 
+
               playerFace.textContent =
                   "😭";
+
 
               computerHand.textContent =
                   "✊";
 
+
               playerHand.textContent =
                   "❔";
+
+
+              computerHand.className =
+                  "hand";
+
+
+              playerHand.className =
+                  "hand";
+
 
               result.textContent =
                   "기권패";
 
+
               info.textContent =
                   "시간 내에 선택하지 못했어요";
 
+
               score.textContent =
+
                   "컴퓨터 " +
                   computerScore +
                   " : " +
@@ -797,23 +1446,42 @@ jobs:
           }
 
 
+          /* =========================
+             게임 재시작
+          ========================= */
+
+
           function restartGame() {
+
 
               clearInterval(timer);
 
+              clearTimeout(chantTimer);
+
+
               computerScore = 0;
+
               playerScore = 0;
+
               round = 0;
+
 
               score.textContent =
                   "컴퓨터 0 : 0 사람";
+
 
               startRound();
 
           }
 
 
+          /* =========================
+             시작
+          ========================= */
+
+
           buttons(false);
+
 
           setTimeout(() => {
 
@@ -824,35 +1492,50 @@ jobs:
 
           </script>
 
+
           </body>
+
           </html>
           EOF
 
-      # ─────────────────────────────
-      # Gradle 다운로드
-      # ─────────────────────────────
+
+      # ==============================
+      # Gradle 설치
+      # ==============================
 
       - name: Gradle 설치
         shell: bash
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
-          unzip -q gradle-8.9-bin.zip
-          echo "$PWD/gradle-8.9/bin" >> "$GITHUB_PATH"
 
-      # ─────────────────────────────
+          wget -q \
+            https://services.gradle.org/distributions/gradle-8.9-bin.zip
+
+          unzip -q gradle-8.9-bin.zip
+
+          echo "$PWD/gradle-8.9/bin" \
+            >> "$GITHUB_PATH"
+
+
+      # ==============================
       # APK 빌드
-      # ─────────────────────────────
+      # ==============================
 
       - name: APK 빌드
         run: |
+
           gradle assembleDebug --no-daemon
 
-      # ─────────────────────────────
-      # APK 저장
-      # ─────────────────────────────
+
+      # ==============================
+      # APK 업로드
+      # ==============================
 
       - name: APK 업로드
         uses: actions/upload-artifact@v4
+
         with:
+
           name: RPC-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+
+          path:
+            app/build/outputs/apk/debug/app-debug.apk
