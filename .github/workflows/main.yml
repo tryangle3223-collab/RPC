@@ -1,0 +1,420 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK 설치
+        uses: android-actions/setup-android@v3
+
+      - name: Android SDK 준비
+        run: |
+          yes | sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 설치
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Android 프로젝트 만들기
+        run: |
+          mkdir -p app/src/main/java/com/example/rpc
+          mkdir -p app/src/main/res/values
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "UnbeatableRPS"
+          include ":app"
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id "com.android.application" version "8.7.3" apply false
+          }
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id "com.android.application"
+          }
+
+          android {
+              namespace "com.example.rpc"
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId "com.example.rpc"
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
+
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <resources>
+              <style name="AppTheme"
+                  parent="android:style/Theme.Material.Light.NoActionBar">
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:colorAccent">#DC2626</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:theme="@style/AppTheme"
+                  android:label="절대 못 이기는 가위바위보">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:screenOrientation="portrait"
+                      android:exported="true">
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/example/rpc/MainActivity.java <<'EOF'
+          package com.example.rpc;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.os.CountDownTimer;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.view.Gravity;
+          import android.widget.*;
+          import java.util.Random;
+
+          public class MainActivity extends Activity {
+
+              TextView title, hands, result, score, timerText;
+              Button scissors, rock, paper;
+              int computerScore = 0;
+              int round = 0;
+              boolean choosing = false;
+              CountDownTimer timer;
+
+              final int RED = Color.rgb(220,38,38);
+
+              @Override
+              public void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  makeScreen();
+                  startRound();
+              }
+
+              TextView text(String s, float size, boolean bold) {
+                  TextView t = new TextView(this);
+                  t.setText(s);
+                  t.setTextSize(size);
+                  t.setGravity(Gravity.CENTER);
+                  t.setTextColor(Color.DKGRAY);
+                  if (bold)
+                      t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+                  return t;
+              }
+
+              void makeScreen() {
+
+                  LinearLayout root = new LinearLayout(this);
+                  root.setOrientation(LinearLayout.VERTICAL);
+                  root.setPadding(20,20,20,20);
+                  root.setGravity(Gravity.CENTER);
+
+                  title = text(
+                      "💻 컴퓨터       👤 사람",
+                      22,true
+                  );
+                  root.addView(title,
+                      new LinearLayout.LayoutParams(-1,60));
+
+                  hands = text(
+                      "🤖                 🙂\n\n✊                 ✊",
+                      55,false
+                  );
+                  root.addView(hands,
+                      new LinearLayout.LayoutParams(-1,250));
+
+                  result = text("준비!",40,true);
+                  result.setTextColor(RED);
+                  root.addView(result,
+                      new LinearLayout.LayoutParams(-1,80));
+
+                  timerText = text(
+                      "가위!  바위!  보!",
+                      17,true
+                  );
+                  root.addView(timerText,
+                      new LinearLayout.LayoutParams(-1,50));
+
+                  score = text(
+                      "컴퓨터 0 : 0 사람",
+                      18,true
+                  );
+                  root.addView(score,
+                      new LinearLayout.LayoutParams(-1,55));
+
+                  LinearLayout buttons =
+                      new LinearLayout(this);
+
+                  scissors = button("✌️ 가위");
+                  rock = button("✊ 바위");
+                  paper = button("✋ 보");
+
+                  buttons.addView(scissors,
+                      new LinearLayout.LayoutParams(0,65,1));
+                  buttons.addView(rock,
+                      new LinearLayout.LayoutParams(0,65,1));
+                  buttons.addView(paper,
+                      new LinearLayout.LayoutParams(0,65,1));
+
+                  root.addView(buttons);
+
+                  Button restart = button("게임 다시 시작");
+                  restart.setOnClickListener(v -> {
+                      if(timer != null) timer.cancel();
+                      computerScore = 0;
+                      round = 0;
+                      score.setText("컴퓨터 0 : 0 사람");
+                      startRound();
+                  });
+
+                  root.addView(restart,
+                      new LinearLayout.LayoutParams(-1,60));
+
+                  setContentView(root);
+              }
+
+              Button button(String s) {
+                  Button b = new Button(this);
+                  b.setText(s);
+                  b.setTextSize(15);
+                  b.setTextColor(Color.WHITE);
+                  b.setBackgroundColor(RED);
+                  return b;
+              }
+
+              void buttons(boolean enabled) {
+                  scissors.setEnabled(enabled);
+                  rock.setEnabled(enabled);
+                  paper.setEnabled(enabled);
+              }
+
+              void startRound() {
+
+                  round++;
+                  choosing = false;
+                  buttons(false);
+
+                  hands.setText(
+                      "🤖                 🙂\n\n✊                 ✊"
+                  );
+
+                  result.setText("가위!");
+                  timerText.setText("준비하세요!");
+
+                  new CountDownTimer(1500,500) {
+
+                      int n=0;
+
+                      public void onTick(long x) {
+                          n++;
+
+                          if(n==1)
+                              result.setText("바위!");
+
+                          if(n==2) {
+                              result.setText("보!");
+                              timerText.setText("지금 선택!");
+                          }
+                      }
+
+                      public void onFinish() {
+                          chooseTime();
+                      }
+
+                  }.start();
+              }
+
+              void chooseTime() {
+
+                  choosing = true;
+                  buttons(true);
+
+                  timer = new CountDownTimer(3000,100) {
+
+                      public void onTick(long x) {
+                          timerText.setText(
+                              "남은 시간: " +
+                              (x/1000.0)
+                          );
+                      }
+
+                      public void onFinish() {
+                          timeout();
+                      }
+
+                  };
+
+                  timer.start();
+
+                  scissors.setOnClickListener(
+                      v -> play("scissors"));
+
+                  rock.setOnClickListener(
+                      v -> play("rock"));
+
+                  paper.setOnClickListener(
+                      v -> play("paper"));
+              }
+
+              void play(String player) {
+
+                  if(!choosing) return;
+
+                  choosing = false;
+                  timer.cancel();
+                  buttons(false);
+
+                  String computer;
+
+                  Random r = new Random();
+
+                  if(player.equals("scissors"))
+                      computer = r.nextBoolean()
+                          ? "scissors" : "rock";
+                  else if(player.equals("rock"))
+                      computer = r.nextBoolean()
+                          ? "rock" : "paper";
+                  else
+                      computer = r.nextBoolean()
+                          ? "paper" : "scissors";
+
+                  String p = hand(player);
+                  String c = hand(computer);
+
+                  hands.setText(
+                      "😎                 " +
+                      (computer.equals(player) ? "😮‍💨" : "😭") +
+                      "\n\n" + c + "                 " + p
+                  );
+
+                  if(computer.equals(player)) {
+                      result.setText("무승부");
+                      timerText.setText(
+                          "컴퓨터 " + name(computer) +
+                          " · 사람 " + name(player)
+                      );
+                  } else {
+                      computerScore++;
+                      result.setText("패배");
+                      timerText.setText(
+                          "컴퓨터 " + name(computer) +
+                          " · 사람 " + name(player)
+                      );
+                  }
+
+                  score.setText(
+                      "컴퓨터 " + computerScore +
+                      " : 0 사람"
+                  );
+
+                  hands.postDelayed(
+                      this::startRound,1800);
+              }
+
+              void timeout() {
+
+                  if(!choosing) return;
+
+                  choosing = false;
+                  buttons(false);
+
+                  computerScore++;
+
+                  hands.setText(
+                      "😎                 😭\n\n✊                 ❔"
+                  );
+
+                  result.setText("기권패");
+                  timerText.setText(
+                      "시간 내에 선택하지 못했어요"
+                  );
+
+                  score.setText(
+                      "컴퓨터 " + computerScore +
+                      " : 0 사람"
+                  );
+
+                  hands.postDelayed(
+                      this::startRound,1500);
+              }
+
+              String hand(String s) {
+                  if(s.equals("rock")) return "✊";
+                  if(s.equals("paper")) return "✋";
+                  return "✌️";
+              }
+
+              String name(String s) {
+                  if(s.equals("rock")) return "바위";
+                  if(s.equals("paper")) return "보";
+                  return "가위";
+              }
+
+              @Override
+              protected void onDestroy() {
+                  if(timer != null) timer.cancel();
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+      - name: APK 빌드
+        run: gradle assembleDebug
+
+      - name: APK 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnbeatableRPS-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
