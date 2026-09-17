@@ -1,0 +1,866 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: |
+          yes | sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Create Android project
+        shell: bash
+        run: |
+          mkdir -p app/src/main/java/com/example/rpc
+          mkdir -p app/src/main/res/values
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name='UnbeatableRPS'
+          include ':app'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.example.rpc'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.example.rpc'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <application
+                  android:theme="@style/AppTheme"
+                  android:label="절대 못 이기는 가위바위보"
+                  android:allowBackup="true">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:screenOrientation="portrait"
+                      android:exported="true">
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+
+                  </activity>
+
+              </application>
+
+          </manifest>
+          EOF
+
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <resources>
+
+              <style name="AppTheme"
+                  parent="android:style/Theme.Material.Light.NoActionBar">
+
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:colorAccent">#DC2626</item>
+                  <item name="android:statusBarColor">#FFFFFF</item>
+                  <item name="android:navigationBarColor">#FFFFFF</item>
+                  <item name="android:windowLightStatusBar">true</item>
+
+              </style>
+
+          </resources>
+          EOF
+
+          cat > app/src/main/java/com/example/rpc/MainActivity.java <<'EOF'
+          package com.example.rpc;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.os.CountDownTimer;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.view.Gravity;
+          import android.widget.*;
+          import java.util.Random;
+
+          public class MainActivity extends Activity {
+
+              TextView score;
+              TextView round;
+              TextView chant;
+              TextView status;
+              TextView cHand;
+              TextView pHand;
+              TextView cFace;
+              TextView pFace;
+              ProgressBar bar;
+
+              Button[] buttons;
+
+              int cs = 0;
+              int ps = 0;
+              int rn = 0;
+
+              boolean accepting = false;
+
+              CountDownTimer timer;
+
+              final int RED = Color.rgb(220, 38, 38);
+
+              final String[] keys = {
+                  "scissors",
+                  "rock",
+                  "paper"
+              };
+
+              final String[] hands = {
+                  "✌️",
+                  "✊",
+                  "✋"
+              };
+
+              final String[] names = {
+                  "가위",
+                  "바위",
+                  "보"
+              };
+
+              TextView tv(String s, float size, boolean bold) {
+
+                  TextView t = new TextView(this);
+
+                  t.setText(s);
+                  t.setTextSize(size);
+                  t.setGravity(Gravity.CENTER);
+                  t.setTextColor(Color.rgb(24, 24, 27));
+
+                  if (bold) {
+                      t.setTypeface(
+                          Typeface.DEFAULT,
+                          Typeface.BOLD
+                      );
+                  }
+
+                  return t;
+              }
+
+              @Override
+              public void onCreate(Bundle b) {
+
+                  super.onCreate(b);
+
+                  build();
+
+                  startRound();
+              }
+
+              void build() {
+
+                  LinearLayout root = new LinearLayout(this);
+
+                  root.setOrientation(
+                      LinearLayout.VERTICAL
+                  );
+
+                  root.setPadding(
+                      24,
+                      18,
+                      24,
+                      18
+                  );
+
+                  root.setBackgroundColor(
+                      Color.WHITE
+                  );
+
+                  score = tv(
+                      "컴퓨터 0 : 0 사람",
+                      18,
+                      true
+                  );
+
+                  round = tv(
+                      "ROUND 1",
+                      13,
+                      false
+                  );
+
+                  LinearLayout top =
+                      new LinearLayout(this);
+
+                  top.addView(
+                      score,
+                      new LinearLayout.LayoutParams(
+                          0,
+                          50,
+                          1
+                      )
+                  );
+
+                  top.addView(
+                      round,
+                      new LinearLayout.LayoutParams(
+                          120,
+                          50
+                      )
+                  );
+
+                  root.addView(top);
+
+                  LinearLayout stage =
+                      new LinearLayout(this);
+
+                  stage.setOrientation(
+                      LinearLayout.VERTICAL
+                  );
+
+                  stage.setGravity(
+                      Gravity.CENTER
+                  );
+
+                  stage.setPadding(
+                      8,
+                      10,
+                      8,
+                      10
+                  );
+
+                  stage.setBackgroundColor(
+                      Color.rgb(244, 244, 245)
+                  );
+
+                  LinearLayout chars =
+                      new LinearLayout(this);
+
+                  chars.setGravity(
+                      Gravity.CENTER
+                  );
+
+                  LinearLayout left =
+                      new LinearLayout(this);
+
+                  left.setOrientation(
+                      LinearLayout.VERTICAL
+                  );
+
+                  left.setGravity(
+                      Gravity.CENTER
+                  );
+
+                  left.addView(
+                      tv("💻 컴퓨터", 14, true)
+                  );
+
+                  cFace = tv("🤖", 52, false);
+
+                  left.addView(
+                      cFace,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          72
+                      )
+                  );
+
+                  cHand = tv("✊", 78, false);
+
+                  left.addView(
+                      cHand,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          120
+                      )
+                  );
+
+                  LinearLayout right =
+                      new LinearLayout(this);
+
+                  right.setOrientation(
+                      LinearLayout.VERTICAL
+                  );
+
+                  right.setGravity(
+                      Gravity.CENTER
+                  );
+
+                  right.addView(
+                      tv("👤 사람", 14, true)
+                  );
+
+                  pFace = tv("🙂", 52, false);
+
+                  right.addView(
+                      pFace,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          72
+                      )
+                  );
+
+                  pHand = tv("✊", 78, false);
+
+                  right.addView(
+                      pHand,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          120
+                      )
+                  );
+
+                  chars.addView(
+                      left,
+                      new LinearLayout.LayoutParams(
+                          0,
+                          -2,
+                          1
+                      )
+                  );
+
+                  chars.addView(
+                      right,
+                      new LinearLayout.LayoutParams(
+                          0,
+                          -2,
+                          1
+                      )
+                  );
+
+                  stage.addView(chars);
+
+                  stage.addView(
+                      tv("VS", 20, true),
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          35
+                      )
+                  );
+
+                  chant = tv(
+                      "준비!",
+                      38,
+                      true
+                  );
+
+                  chant.setTextColor(RED);
+
+                  stage.addView(
+                      chant,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          68
+                      )
+                  );
+
+                  status = tv(
+                      "집중하세요!",
+                      14,
+                      true
+                  );
+
+                  stage.addView(
+                      status,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          30
+                      )
+                  );
+
+                  bar = new ProgressBar(
+                      this,
+                      null,
+                      android.R.attr.progressBarStyleHorizontal
+                  );
+
+                  bar.setMax(1000);
+                  bar.setProgress(1000);
+
+                  stage.addView(
+                      bar,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          10
+                      )
+                  );
+
+                  root.addView(
+                      stage,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          0,
+                          1
+                      )
+                  );
+
+                  LinearLayout controls =
+                      new LinearLayout(this);
+
+                  controls.setPadding(
+                      0,
+                      14,
+                      0,
+                      0
+                  );
+
+                  buttons = new Button[3];
+
+                  for (int i = 0; i < 3; i++) {
+
+                      final int n = i;
+
+                      Button bt =
+                          new Button(this);
+
+                      bt.setText(
+                          hands[i] + " " + names[i]
+                      );
+
+                      bt.setTextSize(15);
+
+                      bt.setTextColor(
+                          Color.WHITE
+                      );
+
+                      bt.setBackgroundColor(
+                          RED
+                      );
+
+                      bt.setOnClickListener(
+                          v -> choose(keys[n])
+                      );
+
+                      buttons[i] = bt;
+
+                      LinearLayout.LayoutParams lp =
+                          new LinearLayout.LayoutParams(
+                              0,
+                              58,
+                              1
+                          );
+
+                      lp.setMargins(
+                          4,
+                          0,
+                          4,
+                          0
+                      );
+
+                      controls.addView(bt, lp);
+                  }
+
+                  root.addView(controls);
+
+                  Button restart =
+                      new Button(this);
+
+                  restart.setText(
+                      "게임 다시 시작"
+                  );
+
+                  restart.setOnClickListener(
+                      v -> {
+
+                          if (timer != null) {
+                              timer.cancel();
+                          }
+
+                          cs = 0;
+                          ps = 0;
+                          rn = 0;
+
+                          updateScore();
+
+                          startRound();
+                      }
+                  );
+
+                  root.addView(
+                      restart,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          56
+                      )
+                  );
+
+                  TextView hint =
+                      tv(
+                          "가위! → 바위! → 보! · 제한시간 3초",
+                          12,
+                          false
+                      );
+
+                  hint.setTextColor(
+                      Color.GRAY
+                  );
+
+                  root.addView(
+                      hint,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          34
+                      )
+                  );
+
+                  setContentView(root);
+              }
+
+              void enabled(boolean x) {
+
+                  for (Button b : buttons) {
+                      b.setEnabled(x);
+                  }
+              }
+
+              void updateScore() {
+
+                  score.setText(
+                      "컴퓨터 " +
+                      cs +
+                      " : " +
+                      ps +
+                      " 사람"
+                  );
+              }
+
+              void startRound() {
+
+                  rn++;
+
+                  round.setText(
+                      "ROUND " + rn
+                  );
+
+                  accepting = false;
+
+                  enabled(false);
+
+                  cHand.setText("✊");
+                  pHand.setText("✊");
+
+                  cFace.setText("🤖");
+                  pFace.setText("🙂");
+
+                  chant.setTextColor(RED);
+                  chant.setText("가위!");
+
+                  status.setText(
+                      "준비하세요!"
+                  );
+
+                  bar.setProgress(1000);
+
+                  final String[] words = {
+                      "가위!",
+                      "바위!",
+                      "보!"
+                  };
+
+                  new CountDownTimer(
+                      1290,
+                      430
+                  ) {
+
+                      int i = 0;
+
+                      public void onTick(
+                          long x
+                      ) {
+
+                          i++;
+
+                          if (i < 3) {
+
+                              chant.setText(
+                                  words[i]
+                              );
+
+                              if (i == 2) {
+                                  status.setText(
+                                      "지금 선택!"
+                                  );
+                              }
+                          }
+                      }
+
+                      public void onFinish() {
+                          beginChoice();
+                      }
+
+                  }.start();
+              }
+
+              void beginChoice() {
+
+                  accepting = true;
+
+                  enabled(true);
+
+                  timer =
+                      new CountDownTimer(
+                          3000,
+                          30
+                      ) {
+
+                          public void onTick(
+                              long x
+                          ) {
+
+                              bar.setProgress(
+                                  (int)
+                                  (x * 1000 / 3000)
+                              );
+                          }
+
+                          public void onFinish() {
+                              timeoutLose();
+                          }
+
+                      }.start();
+              }
+
+              void choose(String p) {
+
+                  if (!accepting) {
+                      return;
+                  }
+
+                  accepting = false;
+
+                  timer.cancel();
+
+                  enabled(false);
+
+                  String c;
+
+                  Random r =
+                      new Random();
+
+                  if (p.equals("rock")) {
+
+                      c = r.nextBoolean()
+                          ? "rock"
+                          : "paper";
+
+                  } else if (
+                      p.equals("paper")
+                  ) {
+
+                      c = r.nextBoolean()
+                          ? "paper"
+                          : "scissors";
+
+                  } else {
+
+                      c = r.nextBoolean()
+                          ? "scissors"
+                          : "rock";
+                  }
+
+                  cHand.setText(
+                      hand(c)
+                  );
+
+                  pHand.setText(
+                      hand(p)
+                  );
+
+                  boolean draw =
+                      c.equals(p);
+
+                  chant.setText(
+                      draw
+                          ? "무승부"
+                          : "패배"
+                  );
+
+                  chant.setTextColor(
+                      RED
+                  );
+
+                  status.setText(
+                      "컴퓨터 " +
+                      name(c) +
+                      " · 사람 " +
+                      name(p)
+                  );
+
+                  if (draw) {
+
+                      cFace.setText("😐");
+                      pFace.setText("😮‍💨");
+
+                  } else {
+
+                      cs++;
+
+                      cFace.setText("😎");
+                      pFace.setText("😭");
+                  }
+
+                  updateScore();
+
+                  cHand.animate()
+                      .translationYBy(-8)
+                      .setDuration(120)
+                      .withEndAction(
+                          () ->
+                          cHand.animate()
+                              .translationY(0)
+                              .setDuration(180)
+                      )
+                      .start();
+
+                  pHand.animate()
+                      .translationYBy(-8)
+                      .setDuration(120)
+                      .withEndAction(
+                          () ->
+                          pHand.animate()
+                              .translationY(0)
+                              .setDuration(180)
+                      )
+                      .start();
+
+                  pHand.postDelayed(
+                      this::startRound,
+                      1600
+                  );
+              }
+
+              String hand(String k) {
+
+                  if (k.equals("rock")) {
+                      return "✊";
+                  }
+
+                  if (k.equals("paper")) {
+                      return "✋";
+                  }
+
+                  return "✌️";
+              }
+
+              String name(String k) {
+
+                  if (k.equals("rock")) {
+                      return "바위";
+                  }
+
+                  if (k.equals("paper")) {
+                      return "보";
+                  }
+
+                  return "가위";
+              }
+
+              void timeoutLose() {
+
+                  if (!accepting) {
+                      return;
+                  }
+
+                  accepting = false;
+
+                  enabled(false);
+
+                  cs++;
+
+                  cHand.setText("✊");
+                  pHand.setText("❔");
+
+                  cFace.setText("😎");
+                  pFace.setText("😭");
+
+                  chant.setText(
+                      "기권패"
+                  );
+
+                  chant.setTextColor(
+                      RED
+                  );
+
+                  status.setText(
+                      "시간 내에 선택하지 못했어요"
+                  );
+
+                  updateScore();
+
+                  pHand.postDelayed(
+                      this::startRound,
+                      1500
+                  );
+              }
+
+              @Override
+              protected void onDestroy() {
+
+                  if (timer != null) {
+                      timer.cancel();
+                  }
+
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+      - name: Build APK
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnbeatableRPS-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
