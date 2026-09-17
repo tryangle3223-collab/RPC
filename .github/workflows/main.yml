@@ -19,12 +19,33 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK 설치
-        uses: android-actions/setup-android@v3
-
-      - name: Android SDK 준비
+      - name: Android SDK 확인 및 설치
+        shell: bash
         run: |
-          yes | sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          set -e
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+
+          echo "Android SDK: $SDK_ROOT"
+
+          SDKMANAGER=$(find "$SDK_ROOT/cmdline-tools" \
+            -type f \
+            -name sdkmanager \
+            2>/dev/null | head -n 1)
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager를 찾지 못했습니다."
+            exit 1
+          fi
+
+          echo "sdkmanager: $SDKMANAGER"
+
+          yes | "$SDKMANAGER" --licenses || true
+
+          "$SDKMANAGER" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Gradle 설치
         uses: gradle/actions/setup-gradle@v4
@@ -32,7 +53,10 @@ jobs:
           gradle-version: "8.10.2"
 
       - name: Android 프로젝트 만들기
+        shell: bash
         run: |
+          set -e
+
           mkdir -p app/src/main/java/com/example/rpc
           mkdir -p app/src/main/res/values
 
@@ -88,15 +112,21 @@ jobs:
                   parent="android:style/Theme.Material.Light.NoActionBar">
                   <item name="android:fontFamily">sans</item>
                   <item name="android:colorAccent">#DC2626</item>
+                  <item name="android:navigationBarColor">#000000</item>
+                  <item name="android:statusBarColor">#FFFFFF</item>
+                  <item name="android:windowLightStatusBar">true</item>
               </style>
           </resources>
           EOF
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
               <application
                   android:theme="@style/AppTheme"
-                  android:label="절대 못 이기는 가위바위보">
+                  android:label="절대 못 이기는 가위바위보"
+                  android:allowBackup="false"
+                  android:supportsRtl="true">
 
                   <activity
                       android:name=".MainActivity"
@@ -109,7 +139,9 @@ jobs:
                       </intent-filter>
 
                   </activity>
+
               </application>
+
           </manifest>
           EOF
 
@@ -123,118 +155,241 @@ jobs:
           import android.graphics.Typeface;
           import android.view.Gravity;
           import android.widget.*;
+
           import java.util.Random;
 
           public class MainActivity extends Activity {
 
-              TextView title, hands, result, score, timerText;
-              Button scissors, rock, paper;
+              TextView hands;
+              TextView result;
+              TextView score;
+              TextView timerText;
+
+              Button scissors;
+              Button rock;
+              Button paper;
+
               int computerScore = 0;
-              int round = 0;
               boolean choosing = false;
               CountDownTimer timer;
 
-              final int RED = Color.rgb(220,38,38);
+              final int RED = Color.rgb(220, 38, 38);
 
               @Override
-              public void onCreate(Bundle b) {
-                  super.onCreate(b);
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
                   makeScreen();
                   startRound();
               }
 
-              TextView text(String s, float size, boolean bold) {
-                  TextView t = new TextView(this);
-                  t.setText(s);
-                  t.setTextSize(size);
-                  t.setGravity(Gravity.CENTER);
-                  t.setTextColor(Color.DKGRAY);
-                  if (bold)
-                      t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-                  return t;
+              TextView makeText(
+                      String text,
+                      float size,
+                      boolean bold
+              ) {
+                  TextView view = new TextView(this);
+
+                  view.setText(text);
+                  view.setTextSize(size);
+                  view.setGravity(Gravity.CENTER);
+                  view.setTextColor(Color.DKGRAY);
+
+                  if (bold) {
+                      view.setTypeface(
+                          Typeface.DEFAULT,
+                          Typeface.BOLD
+                      );
+                  }
+
+                  return view;
               }
 
               void makeScreen() {
 
-                  LinearLayout root = new LinearLayout(this);
-                  root.setOrientation(LinearLayout.VERTICAL);
-                  root.setPadding(20,20,20,20);
+                  LinearLayout root =
+                      new LinearLayout(this);
+
+                  root.setOrientation(
+                      LinearLayout.VERTICAL
+                  );
+
+                  root.setPadding(
+                      20, 20, 20, 20
+                  );
+
                   root.setGravity(Gravity.CENTER);
 
-                  title = text(
+                  TextView title = makeText(
                       "💻 컴퓨터       👤 사람",
-                      22,true
+                      22,
+                      true
                   );
-                  root.addView(title,
-                      new LinearLayout.LayoutParams(-1,60));
 
-                  hands = text(
+                  root.addView(
+                      title,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          60
+                      )
+                  );
+
+                  hands = makeText(
                       "🤖                 🙂\n\n✊                 ✊",
-                      55,false
+                      55,
+                      false
                   );
-                  root.addView(hands,
-                      new LinearLayout.LayoutParams(-1,250));
 
-                  result = text("준비!",40,true);
+                  root.addView(
+                      hands,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          250
+                      )
+                  );
+
+                  result = makeText(
+                      "준비!",
+                      40,
+                      true
+                  );
+
                   result.setTextColor(RED);
-                  root.addView(result,
-                      new LinearLayout.LayoutParams(-1,80));
 
-                  timerText = text(
+                  root.addView(
+                      result,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          80
+                      )
+                  );
+
+                  timerText = makeText(
                       "가위!  바위!  보!",
-                      17,true
+                      17,
+                      true
                   );
-                  root.addView(timerText,
-                      new LinearLayout.LayoutParams(-1,50));
 
-                  score = text(
-                      "컴퓨터 0 : 0 사람",
-                      18,true
+                  root.addView(
+                      timerText,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          50
+                      )
                   );
-                  root.addView(score,
-                      new LinearLayout.LayoutParams(-1,55));
+
+                  score = makeText(
+                      "컴퓨터 0 : 0 사람",
+                      18,
+                      true
+                  );
+
+                  root.addView(
+                      score,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          55
+                      )
+                  );
 
                   LinearLayout buttons =
                       new LinearLayout(this);
 
-                  scissors = button("✌️ 가위");
-                  rock = button("✊ 바위");
-                  paper = button("✋ 보");
+                  scissors = makeButton("✌️ 가위");
+                  rock = makeButton("✊ 바위");
+                  paper = makeButton("✋ 보");
 
-                  buttons.addView(scissors,
-                      new LinearLayout.LayoutParams(0,65,1));
-                  buttons.addView(rock,
-                      new LinearLayout.LayoutParams(0,65,1));
-                  buttons.addView(paper,
-                      new LinearLayout.LayoutParams(0,65,1));
+                  buttons.addView(
+                      scissors,
+                      new LinearLayout.LayoutParams(
+                          0,
+                          65,
+                          1
+                      )
+                  );
+
+                  buttons.addView(
+                      rock,
+                      new LinearLayout.LayoutParams(
+                          0,
+                          65,
+                          1
+                      )
+                  );
+
+                  buttons.addView(
+                      paper,
+                      new LinearLayout.LayoutParams(
+                          0,
+                          65,
+                          1
+                      )
+                  );
 
                   root.addView(buttons);
 
-                  Button restart = button("게임 다시 시작");
+                  Button restart =
+                      makeButton("게임 다시 시작");
+
                   restart.setOnClickListener(v -> {
-                      if(timer != null) timer.cancel();
+
+                      if (timer != null) {
+                          timer.cancel();
+                      }
+
                       computerScore = 0;
-                      round = 0;
-                      score.setText("컴퓨터 0 : 0 사람");
+
+                      score.setText(
+                          "컴퓨터 0 : 0 사람"
+                      );
+
                       startRound();
                   });
 
-                  root.addView(restart,
-                      new LinearLayout.LayoutParams(-1,60));
+                  root.addView(
+                      restart,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          60
+                      )
+                  );
+
+                  TextView hint = makeText(
+                      "가위! 바위! 보! 동안 선택하세요 · 제한시간 3초",
+                      12,
+                      false
+                  );
+
+                  hint.setTextColor(
+                      Color.rgb(113,113,122)
+                  );
+
+                  root.addView(
+                      hint,
+                      new LinearLayout.LayoutParams(
+                          -1,
+                          40
+                      )
+                  );
 
                   setContentView(root);
               }
 
-              Button button(String s) {
-                  Button b = new Button(this);
-                  b.setText(s);
-                  b.setTextSize(15);
-                  b.setTextColor(Color.WHITE);
-                  b.setBackgroundColor(RED);
-                  return b;
+              Button makeButton(String text) {
+
+                  Button button =
+                      new Button(this);
+
+                  button.setText(text);
+                  button.setTextSize(15);
+                  button.setTextColor(Color.WHITE);
+                  button.setBackgroundColor(RED);
+
+                  return button;
               }
 
-              void buttons(boolean enabled) {
+              void enableButtons(boolean enabled) {
+
                   scissors.setEnabled(enabled);
                   rock.setEnabled(enabled);
                   paper.setEnabled(enabled);
@@ -242,9 +397,8 @@ jobs:
 
               void startRound() {
 
-                  round++;
                   choosing = false;
-                  buttons(false);
+                  enableButtons(false);
 
                   hands.setText(
                       "🤖                 🙂\n\n✊                 ✊"
@@ -253,43 +407,58 @@ jobs:
                   result.setText("가위!");
                   timerText.setText("준비하세요!");
 
-                  new CountDownTimer(1500,500) {
+                  new CountDownTimer(
+                      1500,
+                      500
+                  ) {
 
-                      int n=0;
+                      int count = 0;
 
-                      public void onTick(long x) {
-                          n++;
+                      @Override
+                      public void onTick(long millisUntilFinished) {
 
-                          if(n==1)
+                          count++;
+
+                          if (count == 1) {
                               result.setText("바위!");
+                          }
 
-                          if(n==2) {
+                          if (count == 2) {
                               result.setText("보!");
-                              timerText.setText("지금 선택!");
+                              timerText.setText("지금!");
                           }
                       }
 
+                      @Override
                       public void onFinish() {
-                          chooseTime();
+                          beginChoice();
                       }
 
                   }.start();
               }
 
-              void chooseTime() {
+              void beginChoice() {
 
                   choosing = true;
-                  buttons(true);
+                  enableButtons(true);
 
-                  timer = new CountDownTimer(3000,100) {
+                  timer = new CountDownTimer(
+                      3000,
+                      100
+                  ) {
 
-                      public void onTick(long x) {
+                      @Override
+                      public void onTick(
+                          long millisUntilFinished
+                      ) {
+
                           timerText.setText(
                               "남은 시간: " +
-                              (x/1000.0)
+                              (millisUntilFinished / 1000.0)
                           );
                       }
 
+                      @Override
                       public void onFinish() {
                           timeout();
                       }
@@ -299,76 +468,137 @@ jobs:
                   timer.start();
 
                   scissors.setOnClickListener(
-                      v -> play("scissors"));
+                      v -> play("scissors")
+                  );
 
                   rock.setOnClickListener(
-                      v -> play("rock"));
+                      v -> play("rock")
+                  );
 
                   paper.setOnClickListener(
-                      v -> play("paper"));
+                      v -> play("paper")
+                  );
               }
 
               void play(String player) {
 
-                  if(!choosing) return;
+                  if (!choosing) {
+                      return;
+                  }
 
                   choosing = false;
-                  timer.cancel();
-                  buttons(false);
+
+                  if (timer != null) {
+                      timer.cancel();
+                  }
+
+                  enableButtons(false);
 
                   String computer;
 
-                  Random r = new Random();
+                  Random random = new Random();
 
-                  if(player.equals("scissors"))
-                      computer = r.nextBoolean()
-                          ? "scissors" : "rock";
-                  else if(player.equals("rock"))
-                      computer = r.nextBoolean()
-                          ? "rock" : "paper";
-                  else
-                      computer = r.nextBoolean()
-                          ? "paper" : "scissors";
+                  /*
+                   * 컴퓨터는 절대로 사람에게 지지 않는다.
+                   *
+                   * 가위 -> 가위 또는 바위
+                   * 바위 -> 바위 또는 보
+                   * 보   -> 보 또는 가위
+                   */
 
-                  String p = hand(player);
-                  String c = hand(computer);
+                  if (player.equals("scissors")) {
+
+                      computer =
+                          random.nextBoolean()
+                          ? "scissors"
+                          : "rock";
+
+                  } else if (player.equals("rock")) {
+
+                      computer =
+                          random.nextBoolean()
+                          ? "rock"
+                          : "paper";
+
+                  } else {
+
+                      computer =
+                          random.nextBoolean()
+                          ? "paper"
+                          : "scissors";
+                  }
+
+                  String playerHand =
+                      hand(player);
+
+                  String computerHand =
+                      hand(computer);
+
+                  boolean draw =
+                      computer.equals(player);
 
                   hands.setText(
                       "😎                 " +
-                      (computer.equals(player) ? "😮‍💨" : "😭") +
-                      "\n\n" + c + "                 " + p
+                      (draw ? "😮‍💨" : "😭") +
+                      "\n\n" +
+                      computerHand +
+                      "                 " +
+                      playerHand
                   );
 
-                  if(computer.equals(player)) {
+                  /*
+                   * 중요한 부분:
+                   *
+                   * 가위! 바위! 보!가 나오던
+                   * 같은 자리에 결과 표시
+                   */
+
+                  if (draw) {
+
                       result.setText("무승부");
+
                       timerText.setText(
-                          "컴퓨터 " + name(computer) +
-                          " · 사람 " + name(player)
+                          "컴퓨터 " +
+                          name(computer) +
+                          " · 사람 " +
+                          name(player)
                       );
+
                   } else {
+
                       computerScore++;
+
                       result.setText("패배");
+
                       timerText.setText(
-                          "컴퓨터 " + name(computer) +
-                          " · 사람 " + name(player)
+                          "컴퓨터 " +
+                          name(computer) +
+                          " · 사람 " +
+                          name(player)
                       );
                   }
 
                   score.setText(
-                      "컴퓨터 " + computerScore +
+                      "컴퓨터 " +
+                      computerScore +
                       " : 0 사람"
                   );
 
                   hands.postDelayed(
-                      this::startRound,1800);
+                      this::startRound,
+                      1800
+                  );
               }
 
               void timeout() {
 
-                  if(!choosing) return;
+                  if (!choosing) {
+                      return;
+                  }
 
                   choosing = false;
-                  buttons(false);
+
+                  enableButtons(false);
 
                   computerScore++;
 
@@ -377,41 +607,64 @@ jobs:
                   );
 
                   result.setText("기권패");
+
                   timerText.setText(
                       "시간 내에 선택하지 못했어요"
                   );
 
                   score.setText(
-                      "컴퓨터 " + computerScore +
+                      "컴퓨터 " +
+                      computerScore +
                       " : 0 사람"
                   );
 
                   hands.postDelayed(
-                      this::startRound,1500);
+                      this::startRound,
+                      1500
+                  );
               }
 
-              String hand(String s) {
-                  if(s.equals("rock")) return "✊";
-                  if(s.equals("paper")) return "✋";
+              String hand(String choice) {
+
+                  if (choice.equals("rock")) {
+                      return "✊";
+                  }
+
+                  if (choice.equals("paper")) {
+                      return "✋";
+                  }
+
                   return "✌️";
               }
 
-              String name(String s) {
-                  if(s.equals("rock")) return "바위";
-                  if(s.equals("paper")) return "보";
+              String name(String choice) {
+
+                  if (choice.equals("rock")) {
+                      return "바위";
+                  }
+
+                  if (choice.equals("paper")) {
+                      return "보";
+                  }
+
                   return "가위";
               }
 
               @Override
               protected void onDestroy() {
-                  if(timer != null) timer.cancel();
+
+                  if (timer != null) {
+                      timer.cancel();
+                  }
+
                   super.onDestroy();
               }
           }
           EOF
 
       - name: APK 빌드
-        run: gradle assembleDebug
+        run: |
+          gradle assembleDebug
 
       - name: APK 업로드
         uses: actions/upload-artifact@v4
