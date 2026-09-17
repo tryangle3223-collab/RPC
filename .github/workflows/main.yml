@@ -82,7 +82,7 @@ jobs:
 
               <application
                   android:theme="@style/AppTheme"
-                  android:label="절대 못 이기는 가위바위보"
+                  android:label="착한 사람만 이길 수 있는 가위바위보"
                   android:resizeableActivity="true">
 
                   <activity
@@ -177,7 +177,7 @@ jobs:
                        maximum-scale=1.0,
                        user-scalable=no">
 
-          <title>절대 못 이기는 가위바위보</title>
+          <title>착한 사람만 이길 수 있는 가위바위보</title>
 
           <style>
 
@@ -400,7 +400,7 @@ jobs:
 
               <div class="top">
                   <div class="title">
-                      절대 못 이기는<br>
+                      착한 사람만 이길 수 있는<br>
                       가위바위보
                   </div>
 
