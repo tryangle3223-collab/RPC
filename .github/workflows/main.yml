@@ -764,7 +764,6 @@ jobs:
                       float y=e.getY();
                       int w=getWidth();
 
-                      // 카테고리
                       if(y>=d(376) && y<=d(420)) {
 
                           float gap=d(7);
@@ -786,7 +785,6 @@ jobs:
                           }
                       }
 
-                      // 꾸미기 아이템
                       float top=d(432);
                       float gap=d(8);
                       float left=d(14);
@@ -830,7 +828,6 @@ jobs:
                           }
                       }
 
-                      // 하단 버튼
                       float by=d(556);
                       float bw2=(total-gap*2)/3;
 
@@ -887,7 +884,7 @@ jobs:
       - name: Gradle 설정
         uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: "9.6"
+          gradle-version: "9.6.1"
 
       - name: APK 빌드
         run: gradle :app:assembleDebug
