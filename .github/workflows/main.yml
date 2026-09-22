@@ -1,52 +1,22 @@
-name: Build Android APK
+name: 캐릭터 꾸미기 APK 자동 빌드
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-
-      # ==============================
-      # GitHub 저장소 가져오기
-      # ==============================
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-
-      # ==============================
-      # Java 17
-      # ==============================
-
-      - name: Java 17 설치
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-
-      # ==============================
-      # Android 프로젝트 자동 생성
-      # ==============================
-
-      - name: Android 프로젝트 만들기
+      - name: Android 프로젝트 생성
         shell: bash
         run: |
-
-          mkdir -p app/src/main/java/com/example/rpc
-          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/java/com/example/dressup
           mkdir -p app/src/main/res/values
-
-
-          # --------------------------
-          # settings.gradle
-          # --------------------------
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
@@ -59,33 +29,27 @@ jobs:
 
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-
               repositories {
                   google()
                   mavenCentral()
               }
           }
 
-          rootProject.name = "RPC"
-
+          rootProject.name = "CharacterDressUp"
           include(":app")
           EOF
 
-
-          # --------------------------
-          # build.gradle
-          # --------------------------
-
           cat > build.gradle <<'EOF'
           plugins {
-              id 'com.android.application' version '8.7.3' apply false
+              id 'com.android.application' version '9.4.0' apply false
           }
           EOF
 
-
-          # --------------------------
-          # app/build.gradle
-          # --------------------------
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          EOF
 
           cat > app/build.gradle <<'EOF'
           plugins {
@@ -93,61 +57,61 @@ jobs:
           }
 
           android {
-
-              namespace 'com.example.rpc'
-
-              compileSdk 35
+              namespace 'com.example.dressup'
+              compileSdk 37
 
               defaultConfig {
-
-                  applicationId 'com.example.rpc'
-
+                  applicationId 'com.example.dressup'
                   minSdk 23
-
-                  targetSdk 35
-
+                  targetSdk 37
                   versionCode 1
-
                   versionName '1.0'
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
               }
           }
           EOF
 
-
-          # --------------------------
-          # AndroidManifest.xml
-          # --------------------------
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:windowLightStatusBar">true</item>
+                  <item name="android:statusBarColor">#F7F5FC</item>
+                  <item name="android:navigationBarColor">#F7F5FC</item>
+                  <item name="android:colorAccent">#7C5CFC</item>
+              </style>
+          </resources>
+          EOF
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-
-          <manifest
-              xmlns:android="http://schemas.android.com/apk/res/android">
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
               <application
-
                   android:theme="@style/AppTheme"
-
-                  android:label="절대 못 이기는 가위바위보"
-
-                  android:resizeableActivity="true">
+                  android:label="캐릭터 꾸미기"
+                  android:allowBackup="true"
+                  android:supportsRtl="true">
 
                   <activity
-
                       android:name=".MainActivity"
-
                       android:screenOrientation="portrait"
-
                       android:exported="true">
 
                       <intent-filter>
-
-                          <action
-                              android:name="android.intent.action.MAIN" />
-
-                          <category
-                              android:name="android.intent.category.LAUNCHER" />
-
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
 
                   </activity>
@@ -157,1385 +121,776 @@ jobs:
           </manifest>
           EOF
 
-
-          # --------------------------
-          # styles.xml
-          # --------------------------
-
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-
-          <resources>
-
-              <style
-                  name="AppTheme"
-                  parent="android:style/Theme.Material.Light.NoActionBar">
-
-                  <item name="android:fontFamily">sans</item>
-
-                  <item name="android:colorAccent">
-                      #dc2626
-                  </item>
-
-                  <item name="android:navigationBarColor">
-                      #ffffff
-                  </item>
-
-                  <item name="android:statusBarColor">
-                      #ffffff
-                  </item>
-
-                  <item name="android:windowLightStatusBar">
-                      true
-                  </item>
-
-              </style>
-
-          </resources>
-          EOF
-
-
-          # ==============================
-          # WebView MainActivity
-          # ==============================
-
-          cat > app/src/main/java/com/example/rpc/MainActivity.java <<'EOF'
-          package com.example.rpc;
+          cat > app/src/main/java/com/example/dressup/MainActivity.java <<'EOF'
+          package com.example.dressup;
 
           import android.app.Activity;
           import android.os.Bundle;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.graphics.*;
+          import android.view.MotionEvent;
+          import android.view.View;
+          import java.util.Random;
 
           public class MainActivity extends Activity {
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
-
                   super.onCreate(savedInstanceState);
-
-                  WebView webView =
-                      new WebView(this);
-
-                  webView.setWebViewClient(
-                      new WebViewClient()
-                  );
-
-                  WebSettings settings =
-                      webView.getSettings();
-
-                  settings.setJavaScriptEnabled(true);
-
-                  settings.setDomStorageEnabled(true);
-
-                  settings.setBuiltInZoomControls(false);
-
-                  settings.setDisplayZoomControls(false);
-
-                  webView.setVerticalScrollBarEnabled(false);
-
-                  webView.setHorizontalScrollBarEnabled(false);
-
-                  setContentView(webView);
-
-                  webView.loadUrl(
-                      "file:///android_asset/index.html"
-                  );
-              }
-          }
-          EOF
-
-
-          # ==============================
-          # 실제 게임 HTML
-          # ==============================
-
-          cat > app/src/main/assets/index.html <<'EOF'
-          <!DOCTYPE html>
-
-          <html lang="ko">
-
-          <head>
-
-          <meta charset="UTF-8">
-
-          <meta
-              name="viewport"
-              content="width=device-width,
-                       initial-scale=1.0,
-                       maximum-scale=1.0,
-                       user-scalable=no">
-
-          <title>
-              절대 못 이기는 가위바위보
-          </title>
-
-
-          <style>
-
-          * {
-
-              box-sizing: border-box;
-
-              -webkit-tap-highlight-color: transparent;
-          }
-
-
-          html,
-          body {
-
-              margin: 0;
-
-              padding: 0;
-
-              width: 100%;
-
-              height: 100%;
-
-              overflow: hidden;
-
-              font-family:
-                  system-ui,
-                  -apple-system,
-                  BlinkMacSystemFont,
-                  "Segoe UI",
-                  sans-serif;
-
-              background: #f7f7f8;
-          }
-
-
-          body {
-
-              display: flex;
-
-              justify-content: center;
-
-              align-items: center;
-          }
-
-
-          .game {
-
-              width: 100%;
-
-              max-width: 600px;
-
-              height: 100dvh;
-
-              padding:
-                  max(14px, env(safe-area-inset-top))
-                  14px
-                  max(12px, env(safe-area-inset-bottom))
-                  14px;
-
-              display: flex;
-
-              flex-direction: column;
-
-              gap: 8px;
-          }
-
-
-          /* =========================
-             상단
-          ========================= */
-
-          .top {
-
-              height: 55px;
-
-              display: flex;
-
-              justify-content: space-between;
-
-              align-items: center;
-          }
-
-
-          .title {
-
-              font-size: 20px;
-
-              line-height: 1.15;
-
-              font-weight: 900;
-
-              color: #18181b;
-          }
-
-
-          .round {
-
-              font-size: 13px;
-
-              font-weight: 800;
-
-              color: #71717a;
-          }
-
-
-          /* =========================
-             게임판
-          ========================= */
-
-          .arena {
-
-              flex: 1;
-
-              min-height: 0;
-
-              background: white;
-
-              border-radius: 22px;
-
-              padding: 12px;
-
-              display: flex;
-
-              flex-direction: column;
-
-              box-shadow:
-                  0 2px 12px rgba(0,0,0,.06);
-          }
-
-
-          .names {
-
-              display: grid;
-
-              grid-template-columns: 1fr 1fr;
-
-              text-align: center;
-
-              font-size: 16px;
-
-              font-weight: 900;
-
-              color: #27272a;
-
-              padding: 4px 0;
-          }
-
-
-          .faces {
-
-              display: grid;
-
-              grid-template-columns: 1fr 1fr;
-
-              text-align: center;
-
-              font-size:
-                  clamp(45px, 13vw, 72px);
-
-              line-height: 1;
-
-              padding: 4px 0;
-          }
-
-
-          /* =========================
-             손
-          ========================= */
-
-          .hands {
-
-              flex: 1;
-
-              min-height: 0;
-
-              display: grid;
-
-              grid-template-columns: 1fr 1fr;
-
-              align-items: center;
-
-              text-align: center;
-
-              font-size:
-                  clamp(65px, 20vw, 105px);
-
-              line-height: 1;
-          }
-
-
-          .hand {
-
-              transition:
-                  transform .25s;
-          }
-
-
-          .shake {
-
-              animation:
-                  shake .16s infinite alternate;
-          }
-
-
-          @keyframes shake {
-
-              from {
-
-                  transform:
-                      translateY(-13px);
+                  setContentView(new DressUpView(this));
               }
 
-              to {
+              static class DressUpView extends View {
 
-                  transform:
-                      translateY(13px);
-              }
-          }
+                  Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  Random random = new Random();
 
+                  SharedPreferences save;
 
-          /* =========================
-             결과
-          ========================= */
+                  int category = 0;
+                  int hair = 0;
+                  int face = 0;
+                  int clothes = 0;
+                  int accessory = 0;
 
-          .result {
+                  String message = "나만의 캐릭터를 꾸며보세요!";
 
-              height: 65px;
+                  String[][] names = {
+                      {"단발", "긴머리", "포니", "양갈래", "곱슬"},
+                      {"미소", "윙크", "하트눈", "졸림", "놀람"},
+                      {"후드", "원피스", "티셔츠", "정장", "파자마"},
+                      {"없음", "안경", "왕관", "리본", "별"}
+                  };
 
-              display: flex;
+                  int purple = Color.rgb(124,92,252);
 
-              justify-content: center;
+                  DressUpView(Context context) {
+                      super(context);
 
-              align-items: center;
-
-              color: #dc2626;
-
-              font-size:
-                  clamp(30px, 9vw, 45px);
-
-              font-weight: 1000;
-          }
-
-
-          /* =========================
-             정보
-          ========================= */
-
-          .info {
-
-              height: 42px;
-
-              text-align: center;
-
-              font-size: 13px;
-
-              font-weight: 800;
-
-              color: #52525b;
-          }
-
-
-          .score {
-
-              text-align: center;
-
-              height: 32px;
-
-              font-size: 16px;
-
-              font-weight: 900;
-
-              color: #18181b;
-          }
-
-
-          /* =========================
-             버튼
-          ========================= */
-
-          .buttons {
-
-              display: grid;
-
-              grid-template-columns:
-                  repeat(3, 1fr);
-
-              gap: 7px;
-          }
-
-
-          button {
-
-              height: 62px;
-
-              border: 0;
-
-              border-radius: 14px;
-
-              background: #dc2626;
-
-              color: white;
-
-              font-size: 15px;
-
-              font-weight: 900;
-
-              box-shadow:
-                  0 4px 0 #991b1b;
-
-              touch-action: manipulation;
-          }
-
-
-          button:active {
-
-              transform:
-                  translateY(3px);
-
-              box-shadow:
-                  0 1px 0 #991b1b;
-          }
-
-
-          button:disabled {
-
-              opacity: .42;
-          }
-
-
-          .restart {
-
-              margin-top: 7px;
-
-              background: #27272a;
-
-              box-shadow:
-                  0 4px 0 #09090b;
-          }
-
-
-          .hint {
-
-              text-align: center;
-
-              color: #71717a;
-
-              font-size: 10px;
-
-              height: 20px;
-          }
-
-
-          /* =========================
-             작은 화면
-          ========================= */
-
-          @media (max-height: 650px) {
-
-              .top {
-
-                  height: 45px;
-              }
-
-
-              .faces {
-
-                  font-size: 45px;
-              }
-
-
-              .hands {
-
-                  font-size: 70px;
-              }
-
-
-              .result {
-
-                  height: 52px;
-              }
-
-
-              button {
-
-                  height: 52px;
-              }
-
-          }
-
-
-          </style>
-
-          </head>
-
-
-          <body>
-
-
-          <div class="game">
-
-
-              <!-- 상단 -->
-
-              <div class="top">
-
-                  <div class="title">
-
-                      절대 못 이기는<br>
-                      가위바위보
-
-                  </div>
-
-
-                  <div
-                      class="round"
-                      id="round">
-
-                      ROUND 1
-
-                  </div>
-
-              </div>
-
-
-              <!-- 게임판 -->
-
-              <div class="arena">
-
-
-                  <!-- 이름 -->
-
-                  <div class="names">
-
-                      <div>
-                          💻 컴퓨터
-                      </div>
-
-                      <div>
-                          👤 사람
-                      </div>
-
-                  </div>
-
-
-                  <!-- 얼굴 -->
-
-                  <div class="faces">
-
-                      <div id="computerFace">
-                          🤖
-                      </div>
-
-                      <div id="playerFace">
-                          🙂
-                      </div>
-
-                  </div>
-
-
-                  <!-- 손 -->
-
-                  <div class="hands">
-
-                      <div
-                          id="computerHand"
-                          class="hand">
-
-                          ✊
-
-                      </div>
-
-
-                      <div
-                          id="playerHand"
-                          class="hand">
-
-                          ✊
-
-                      </div>
-
-                  </div>
-
-
-                  <!-- 결과 -->
-
-                  <div
-                      id="result"
-                      class="result">
-
-                      준비!
-
-                  </div>
-
-
-                  <!-- 설명 -->
-
-                  <div
-                      id="info"
-                      class="info">
-
-                      가위! 바위! 보!
-
-                  </div>
-
-
-                  <!-- 점수 -->
-
-                  <div
-                      id="score"
-                      class="score">
-
-                      컴퓨터 0 : 0 사람
-
-                  </div>
-
-
-              </div>
-
-
-              <!-- 선택 버튼 -->
-
-              <div class="buttons">
-
-
-                  <button
-                      id="scissors"
-                      onclick="choose('scissors')">
-
-                      ✌️<br>
-                      가위
-
-                  </button>
-
-
-                  <button
-                      id="rock"
-                      onclick="choose('rock')">
-
-                      ✊<br>
-                      바위
-
-                  </button>
-
-
-                  <button
-                      id="paper"
-                      onclick="choose('paper')">
-
-                      ✋<br>
-                      보
-
-                  </button>
-
-
-              </div>
-
-
-              <!-- 재시작 -->
-
-              <button
-                  class="restart"
-                  onclick="restartGame()">
-
-                  게임 다시 시작
-
-              </button>
-
-
-              <div class="hint">
-
-                  가위! 바위! 보! 동안 선택하세요 · 제한시간 3초
-
-              </div>
-
-
-          </div>
-
-
-          <script>
-
-
-          /* =========================
-             게임 데이터
-          ========================= */
-
-
-          const hands = {
-
-              rock: "✊",
-
-              paper: "✋",
-
-              scissors: "✌️"
-
-          };
-
-
-          const names = {
-
-              rock: "바위",
-
-              paper: "보",
-
-              scissors: "가위"
-
-          };
-
-
-          let computerScore = 0;
-
-          let playerScore = 0;
-
-          let round = 0;
-
-          let choosing = false;
-
-          let timer = null;
-
-          let chantTimer = null;
-
-
-          const result =
-              document.getElementById("result");
-
-
-          const info =
-              document.getElementById("info");
-
-
-          const score =
-              document.getElementById("score");
-
-
-          const computerHand =
-              document.getElementById(
-                  "computerHand"
-              );
-
-
-          const playerHand =
-              document.getElementById(
-                  "playerHand"
-              );
-
-
-          const computerFace =
-              document.getElementById(
-                  "computerFace"
-              );
-
-
-          const playerFace =
-              document.getElementById(
-                  "playerFace"
-              );
-
-
-          const roundText =
-              document.getElementById(
-                  "round"
-              );
-
-
-          /* =========================
-             버튼
-          ========================= */
-
-
-          function buttons(enabled) {
-
-              document.getElementById(
-                  "scissors"
-              ).disabled = !enabled;
-
-
-              document.getElementById(
-                  "rock"
-              ).disabled = !enabled;
-
-
-              document.getElementById(
-                  "paper"
-              ).disabled = !enabled;
-
-          }
-
-
-          /* =========================
-             라운드 시작
-          ========================= */
-
-
-          function startRound() {
-
-              clearInterval(timer);
-
-              clearTimeout(chantTimer);
-
-
-              round++;
-
-
-              roundText.textContent =
-                  "ROUND " + round;
-
-
-              choosing = false;
-
-
-              buttons(false);
-
-
-              computerFace.textContent =
-                  "🤖";
-
-
-              playerFace.textContent =
-                  "🙂";
-
-
-              computerHand.textContent =
-                  "✊";
-
-
-              playerHand.textContent =
-                  "✊";
-
-
-              computerHand.className =
-                  "hand";
-
-
-              playerHand.className =
-                  "hand";
-
-
-              result.textContent =
-                  "가위!";
-
-
-              info.textContent =
-                  "준비하세요!";
-
-
-              /* 가위 */
-
-              chantTimer = setTimeout(() => {
-
-                  result.textContent =
-                      "바위!";
-
-              }, 450);
-
-
-              /* 바위 */
-
-              chantTimer = setTimeout(() => {
-
-                  result.textContent =
-                      "보!";
-
-                  info.textContent =
-                      "지금!";
-
-
-                  computerHand.classList.add(
-                      "shake"
-                  );
-
-
-                  playerHand.classList.add(
-                      "shake"
-                  );
-
-              }, 900);
-
-
-              /* 선택 가능 */
-
-              chantTimer = setTimeout(() => {
-
-                  beginChoice();
-
-              }, 1400);
-
-          }
-
-
-          /* =========================
-             선택 시작
-          ========================= */
-
-
-          function beginChoice() {
-
-              choosing = true;
-
-              buttons(true);
-
-
-              let remaining = 3;
-
-
-              info.textContent =
-                  "남은 시간: 3.0초";
-
-
-              timer = setInterval(() => {
-
-                  remaining -= 0.1;
-
-
-                  if (remaining <= 0) {
-
-                      clearInterval(timer);
-
-                      timeout();
-
-                      return;
-                  }
-
-
-                  info.textContent =
-                      "남은 시간: " +
-                      remaining.toFixed(1) +
-                      "초";
-
-              }, 100);
-
-          }
-
-
-          /* =========================
-             선택
-          ========================= */
-
-
-          function choose(player) {
-
-              if (!choosing)
-                  return;
-
-
-              choosing = false;
-
-
-              clearInterval(timer);
-
-              buttons(false);
-
-
-              let computer;
-
-
-              /*
-               * =================================
-               *
-               * 사람 승리 확률
-               *
-               * 0.01%
-               *
-               * 0.0001 = 0.01%
-               *
-               * =================================
-               */
-
-
-              const lucky =
-                  Math.random() < 0.0001;
-
-
-              if (lucky) {
-
-                  /*
-                   * 사람에게 이기는 패를
-                   * 컴퓨터가 일부러 냄
-                   */
-
-
-                  if (player === "scissors") {
-
-                      computer = "paper";
-
-                  }
-
-                  else if (player === "rock") {
-
-                      computer = "scissors";
-
-                  }
-
-                  else {
-
-                      computer = "rock";
-
-                  }
-
-
-              }
-
-              else {
-
-                  /*
-                   * 평소에는
-                   *
-                   * 무승부 또는 컴퓨터 승리
-                   */
-
-
-                  if (player === "scissors") {
-
-                      computer =
-                          Math.random() < 0.5
-                          ? "scissors"
-                          : "rock";
-
-                  }
-
-                  else if (player === "rock") {
-
-                      computer =
-                          Math.random() < 0.5
-                          ? "rock"
-                          : "paper";
-
-                  }
-
-                  else {
-
-                      computer =
-                          Math.random() < 0.5
-                          ? "paper"
-                          : "scissors";
-
-                  }
-
-              }
-
-
-              computerHand.classList.remove(
-                  "shake"
-              );
-
-
-              playerHand.classList.remove(
-                  "shake"
-              );
-
-
-              /*
-               * 손 공개
-               */
-
-              setTimeout(() => {
-
-
-                  computerHand.textContent =
-                      hands[computer];
-
-
-                  playerHand.textContent =
-                      hands[player];
-
-
-                  /*
-                   * 승패 판정
-                   */
-
-                  const draw =
-                      computer === player;
-
-
-                  const playerWin =
-
-                      (
-                          player === "rock" &&
-                          computer === "scissors"
-                      )
-
-                      ||
-
-                      (
-                          player === "scissors" &&
-                          computer === "paper"
-                      )
-
-                      ||
-
-                      (
-                          player === "paper" &&
-                          computer === "rock"
+                      save = context.getSharedPreferences(
+                              "character",
+                              Context.MODE_PRIVATE
                       );
 
+                      hair = save.getInt("hair",0);
+                      face = save.getInt("face",0);
+                      clothes = save.getInt("clothes",0);
+                      accessory = save.getInt("accessory",0);
 
-                  /*
-                   * 무승부
-                   */
-
-                  if (draw) {
-
-
-                      result.textContent =
-                          "무승부";
-
-
-                      computerFace.textContent =
-                          "😐";
-
-
-                      playerFace.textContent =
-                          "😮‍💨";
-
+                      setBackgroundColor(Color.rgb(247,245,252));
                   }
 
-
-                  /*
-                   * 사람 승리
-                   */
-
-                  else if (playerWin) {
-
-
-                      playerScore++;
-
-
-                      result.textContent =
-                          "승리!";
-
-
-                      computerFace.textContent =
-                          "😭";
-
-
-                      playerFace.textContent =
-                          "😎";
-
+                  float d(float v) {
+                      return v * getResources()
+                              .getDisplayMetrics().density;
                   }
 
+                  void text(Canvas c,String s,float size,int color,
+                            float x,float y,boolean bold) {
 
-                  /*
-                   * 컴퓨터 승리
-                   */
+                      p.setStyle(Paint.Style.FILL);
+                      p.setColor(color);
+                      p.setTextSize(d(size));
+                      p.setTypeface(Typeface.create(
+                              "sans",
+                              bold ? Typeface.BOLD : Typeface.NORMAL
+                      ));
 
-                  else {
-
-
-                      computerScore++;
-
-
-                      result.textContent =
-                          "패배";
-
-
-                      computerFace.textContent =
-                          "😎";
-
-
-                      playerFace.textContent =
-                          "😭";
-
+                      c.drawText(s,x,y,p);
                   }
 
+                  void centerText(Canvas c,String s,float size,
+                                  int color,float x,float y) {
 
-                  /*
-                   * 결과 설명
-                   */
+                      p.setTextSize(d(size));
+                      p.setTypeface(Typeface.DEFAULT_BOLD);
+                      p.setColor(color);
 
-                  info.textContent =
+                      c.drawText(
+                              s,
+                              x - p.measureText(s)/2,
+                              y,
+                              p
+                      );
+                  }
 
-                      "컴퓨터 " +
-                      names[computer] +
-                      " · 사람 " +
-                      names[player];
+                  @Override
+                  protected void onDraw(Canvas c) {
 
+                      super.onDraw(c);
 
-                  /*
-                   * 점수
-                   */
+                      int w = getWidth();
 
-                  score.textContent =
+                      text(
+                              c,
+                              "✨ 캐릭터 꾸미기",
+                              24,
+                              Color.rgb(40,35,50),
+                              d(20),
+                              d(40),
+                              true
+                      );
 
-                      "컴퓨터 " +
-                      computerScore +
-                      " : " +
-                      playerScore +
-                      " 사람";
+                      text(
+                              c,
+                              "나만의 캐릭터를 만들어 보세요",
+                              13,
+                              Color.rgb(110,103,125),
+                              d(20),
+                              d(63),
+                              false
+                      );
 
+                      drawCharacter(c,w);
+                      drawCategories(c,w);
+                      drawItems(c,w);
+                      drawButtons(c,w);
+                  }
 
-                  /*
-                   * 다음 라운드
-                   */
+                  void drawCharacter(Canvas c,int w) {
 
-                  setTimeout(() => {
+                      p.setColor(Color.WHITE);
 
-                      startRound();
+                      c.drawRoundRect(
+                              d(14),
+                              d(82),
+                              w-d(14),
+                              d(360),
+                              d(24),
+                              d(24),
+                              p
+                      );
 
-                  }, 1800);
+                      float cx = w/2f;
+                      float cy = d(218);
 
+                      // 몸
+                      int[] body = {
+                              Color.rgb(105,145,220),
+                              Color.rgb(242,125,155),
+                              Color.rgb(110,190,160),
+                              Color.rgb(105,105,120),
+                              Color.rgb(170,135,210)
+                      };
 
-              }, 250);
+                      p.setColor(body[clothes]);
 
+                      c.drawRoundRect(
+                              cx-d(60),
+                              cy+d(55),
+                              cx+d(60),
+                              cy+d(135),
+                              d(30),
+                              d(30),
+                              p
+                      );
+
+                      // 목
+                      p.setColor(Color.rgb(250,210,180));
+
+                      c.drawRoundRect(
+                              cx-d(15),
+                              cy+d(30),
+                              cx+d(15),
+                              cy+d(65),
+                              d(8),
+                              d(8),
+                              p
+                      );
+
+                      // 얼굴
+                      p.setColor(Color.rgb(255,220,190));
+                      c.drawCircle(cx,cy,d(62),p);
+
+                      drawHair(c,cx,cy);
+                      drawFace(c,cx,cy);
+                      drawAccessory(c,cx,cy);
+
+                      centerText(
+                              c,
+                              message,
+                              14,
+                              Color.rgb(86,75,105),
+                              cx,
+                              d(338)
+                      );
+                  }
+
+                  void drawHair(Canvas c,float x,float y) {
+
+                      p.setColor(Color.rgb(77,57,48));
+
+                      if(hair==0) {
+
+                          c.drawCircle(x,y-d(42),d(50),p);
+
+                          c.drawRoundRect(
+                                  x-d(52),
+                                  y-d(42),
+                                  x+d(52),
+                                  y+d(8),
+                                  d(25),
+                                  d(25),
+                                  p
+                          );
+
+                      } else if(hair==1) {
+
+                          c.drawCircle(x,y-d(42),d(52),p);
+
+                          c.drawRoundRect(
+                                  x-d(54),
+                                  y-d(45),
+                                  x-d(27),
+                                  y+d(70),
+                                  d(18),
+                                  d(18),
+                                  p
+                          );
+
+                          c.drawRoundRect(
+                                  x+d(27),
+                                  y-d(45),
+                                  x+d(54),
+                                  y+d(70),
+                                  d(18),
+                                  d(18),
+                                  p
+                          );
+
+                      } else if(hair==2) {
+
+                          c.drawCircle(x,y-d(42),d(50),p);
+                          c.drawCircle(x+d(48),y-d(55),d(22),p);
+
+                      } else if(hair==3) {
+
+                          c.drawCircle(x,y-d(42),d(48),p);
+                          c.drawCircle(x-d(52),y-d(30),d(22),p);
+                          c.drawCircle(x+d(52),y-d(30),d(22),p);
+
+                      } else {
+
+                          c.drawCircle(x,y-d(43),d(52),p);
+                          c.drawCircle(x-d(44),y-d(12),d(24),p);
+                          c.drawCircle(x+d(44),y-d(12),d(24),p);
+                      }
+                  }
+
+                  void drawFace(Canvas c,float x,float y) {
+
+                      p.setColor(Color.rgb(55,48,62));
+
+                      if(face==1) {
+
+                          p.setStyle(Paint.Style.FILL);
+
+                          c.drawCircle(
+                                  x-d(22),
+                                  y-d(3),
+                                  d(7),
+                                  p
+                          );
+
+                          p.setStrokeWidth(d(4));
+                          p.setStyle(Paint.Style.STROKE);
+
+                          c.drawLine(
+                                  x+d(15),
+                                  y-d(3),
+                                  x+d(30),
+                                  y-d(3),
+                                  p
+                          );
+
+                      } else if(face==2) {
+
+                          p.setStyle(Paint.Style.FILL);
+                          p.setColor(Color.rgb(220,90,120));
+
+                          heart(c,x-d(22),y-d(3));
+                          heart(c,x+d(22),y-d(3));
+
+                      } else if(face==3) {
+
+                          p.setStyle(Paint.Style.STROKE);
+                          p.setStrokeWidth(d(4));
+
+                          c.drawLine(
+                                  x-d(29),
+                                  y,
+                                  x-d(14),
+                                  y,
+                                  p
+                          );
+
+                          c.drawLine(
+                                  x+d(14),
+                                  y,
+                                  x+d(29),
+                                  y,
+                                  p
+                          );
+
+                      } else if(face==4) {
+
+                          p.setStyle(Paint.Style.FILL);
+
+                          c.drawCircle(
+                                  x-d(22),
+                                  y-d(3),
+                                  d(7),
+                                  p
+                          );
+
+                          c.drawCircle(
+                                  x+d(22),
+                                  y-d(3),
+                                  d(7),
+                                  p
+                          );
+
+                      } else {
+
+                          p.setStyle(Paint.Style.FILL);
+
+                          c.drawCircle(
+                                  x-d(22),
+                                  y-d(3),
+                                  d(7),
+                                  p
+                          );
+
+                          c.drawCircle(
+                                  x+d(22),
+                                  y-d(3),
+                                  d(7),
+                                  p
+                          );
+                      }
+
+                      p.setStyle(Paint.Style.STROKE);
+                      p.setStrokeWidth(d(3));
+
+                      RectF mouth = new RectF(
+                              x-d(15),
+                              y+d(8),
+                              x+d(15),
+                              y+d(30)
+                      );
+
+                      c.drawArc(
+                              mouth,
+                              face==3 ? 0 : 20,
+                              face==3 ? 180 : 140,
+                              false,
+                              p
+                      );
+
+                      p.setStyle(Paint.Style.FILL);
+                  }
+
+                  void heart(Canvas c,float x,float y) {
+
+                      Path path = new Path();
+
+                      path.moveTo(x,y+d(9));
+
+                      path.cubicTo(
+                              x-d(15),y-d(3),
+                              x-d(8),y-d(15),
+                              x,y-d(5)
+                      );
+
+                      path.cubicTo(
+                              x+d(8),y-d(15),
+                              x+d(15),y-d(3),
+                              x,y+d(9)
+                      );
+
+                      c.drawPath(path,p);
+                  }
+
+                  void drawAccessory(Canvas c,float x,float y) {
+
+                      if(accessory==1) {
+
+                          p.setStyle(Paint.Style.STROKE);
+                          p.setStrokeWidth(d(4));
+                          p.setColor(Color.DKGRAY);
+
+                          c.drawRoundRect(
+                                  x-d(35),y-d(17),
+                                  x-d(5),y+d(7),
+                                  d(7),d(7),p
+                          );
+
+                          c.drawRoundRect(
+                                  x+d(5),y-d(17),
+                                  x+d(35),y+d(7),
+                                  d(7),d(7),p
+                          );
+
+                          c.drawLine(
+                                  x-d(5),y-d(5),
+                                  x+d(5),y-d(5),
+                                  p
+                          );
+
+                          p.setStyle(Paint.Style.FILL);
+
+                      } else if(accessory==2) {
+
+                          p.setColor(Color.rgb(245,190,50));
+
+                          Path crown = new Path();
+
+                          crown.moveTo(x-d(28),y-d(65));
+                          crown.lineTo(x-d(18),y-d(82));
+                          crown.lineTo(x,y-d(67));
+                          crown.lineTo(x+d(18),y-d(82));
+                          crown.lineTo(x+d(28),y-d(65));
+                          crown.close();
+
+                          c.drawPath(crown,p);
+
+                      } else if(accessory==3) {
+
+                          p.setColor(Color.rgb(240,90,135));
+
+                          c.drawCircle(
+                                  x-d(42),y-d(45),d(15),p
+                          );
+
+                          c.drawCircle(
+                                  x-d(25),y-d(45),d(15),p
+                          );
+
+                      } else if(accessory==4) {
+
+                          p.setColor(Color.rgb(250,190,50));
+
+                          Path star = new Path();
+
+                          for(int i=0;i<10;i++) {
+
+                              double a =
+                                      -Math.PI/2 +
+                                      i*Math.PI/5;
+
+                              float r =
+                                      i%2==0 ? d(15) : d(7);
+
+                              float px =
+                                      x+d(52)+(float)Math.cos(a)*r;
+
+                              float py =
+                                      y-d(45)+(float)Math.sin(a)*r;
+
+                              if(i==0)
+                                  star.moveTo(px,py);
+                              else
+                                  star.lineTo(px,py);
+                          }
+
+                          star.close();
+                          c.drawPath(star,p);
+                      }
+                  }
+
+                  void drawCategories(Canvas c,int w) {
+
+                      String[] names =
+                              {"머리","표정","옷","소품"};
+
+                      float gap=d(7);
+                      float left=d(14);
+                      float total=w-d(28);
+                      float bw=(total-gap*3)/4;
+
+                      for(int i=0;i<4;i++) {
+
+                          float x =
+                                  left+i*(bw+gap);
+
+                          p.setColor(
+                                  i==category
+                                  ? purple
+                                  : Color.WHITE
+                          );
+
+                          c.drawRoundRect(
+                                  x,d(376),
+                                  x+bw,d(420),
+                                  d(14),d(14),p
+                          );
+
+                          centerText(
+                                  c,
+                                  names[i],
+                                  14,
+                                  i==category
+                                  ? Color.WHITE
+                                  : Color.rgb(82,75,98),
+                                  x+bw/2,
+                                  d(404)
+                          );
+                      }
+                  }
+
+                  void drawItems(Canvas c,int w) {
+
+                      float top=d(432);
+                      float gap=d(8);
+                      float left=d(14);
+                      float total=w-d(28);
+                      float bw=(total-gap*2)/3;
+                      float bh=d(52);
+
+                      int selected =
+                              category==0 ? hair :
+                              category==1 ? face :
+                              category==2 ? clothes :
+                              accessory;
+
+                      for(int i=0;i<5;i++) {
+
+                          int row=i/3;
+                          int col=i%3;
+
+                          float x =
+                                  left+col*(bw+gap);
+
+                          float y =
+                                  top+row*(bh+gap);
+
+                          p.setColor(
+                                  i==selected
+                                  ? Color.rgb(235,229,255)
+                                  : Color.WHITE
+                          );
+
+                          c.drawRoundRect(
+                                  x,y,
+                                  x+bw,y+bh,
+                                  d(14),d(14),p
+                          );
+
+                          p.setStyle(Paint.Style.STROKE);
+                          p.setStrokeWidth(d(1.5f));
+                          p.setColor(
+                                  i==selected
+                                  ? purple
+                                  : Color.rgb(226,221,235)
+                          );
+
+                          c.drawRoundRect(
+                                  x,y,
+                                  x+bw,y+bh,
+                                  d(14),d(14),p
+                          );
+
+                          p.setStyle(Paint.Style.FILL);
+
+                          centerText(
+                                  c,
+                                  names[category][i],
+                                  13,
+                                  Color.rgb(64,58,77),
+                                  x+bw/2,
+                                  y+d(32)
+                          );
+                      }
+                  }
+
+                  void drawButtons(Canvas c,int w) {
+
+                      float y=d(556);
+                      float gap=d(8);
+                      float left=d(14);
+                      float total=w-d(28);
+                      float bw=(total-gap*2)/3;
+
+                      String[] labels={
+                              "🎲 랜덤",
+                              "↺ 초기화",
+                              "💾 저장"
+                      };
+
+                      for(int i=0;i<3;i++) {
+
+                          float x =
+                                  left+i*(bw+gap);
+
+                          p.setColor(
+                                  i==2
+                                  ? purple
+                                  : Color.WHITE
+                          );
+
+                          c.drawRoundRect(
+                                  x,y,
+                                  x+bw,y+d(48),
+                                  d(15),d(15),p
+                          );
+
+                          centerText(
+                                  c,
+                                  labels[i],
+                                  13,
+                                  i==2
+                                  ? Color.WHITE
+                                  : Color.rgb(70,63,82),
+                                  x+bw/2,
+                                  y+d(30)
+                          );
+                      }
+                  }
+
+                  @Override
+                  public boolean onTouchEvent(MotionEvent e) {
+
+                      if(e.getAction()!=MotionEvent.ACTION_UP)
+                          return true;
+
+                      float x=e.getX();
+                      float y=e.getY();
+
+                      int w=getWidth();
+
+                      // 카테고리
+                      if(y>=d(376) && y<=d(420)) {
+
+                          float gap=d(7);
+                          float left=d(14);
+                          float total=w-d(28);
+                          float bw=(total-gap*3)/4;
+
+                          for(int i=0;i<4;i++) {
+
+                              float bx=
+                                      left+i*(bw+gap);
+
+                              if(x>=bx &&
+                                 x<=bx+bw) {
+
+                                  category=i;
+                                  invalidate();
+                                  return true;
+                              }
+                          }
+                      }
+
+                      // 아이템
+                      float top=d(432);
+                      float gap=d(8);
+                      float left=d(14);
+                      float total=w-d(28);
+                      float bw=(total-gap*2)/3;
+                      float bh=d(52);
+
+                      for(int i=0;i<5;i++) {
+
+                          int row=i/3;
+                          int col=i%3;
+
+                          float bx=
+                                  left+col*(bw+gap);
+
+                          float by=
+                                  top+row*(bh+gap);
+
+                          if(x>=bx &&
+                             x<=bx+bw &&
+                             y>=by &&
+                             y<=by+bh) {
+
+                              if(category==0)
+                                  hair=i;
+                              else if(category==1)
+                                  face=i;
+                              else if(category==2)
+                                  clothes=i;
+                              else
+                                  accessory=i;
+
+                              message =
+                                      names[category][i]
+                                      + " 선택!";
+
+                              invalidate();
+                              return true;
+                          }
+                      }
+
+                      // 하단 버튼
+                      float by=d(556);
+                      float bw2=(total-gap*2)/3;
+
+                      if(y>=by && y<=by+d(48)) {
+
+                          int which =
+                                  (int)((x-left)/(bw2+gap));
+
+                          if(which==0) {
+
+                              hair=random.nextInt(5);
+                              face=random.nextInt(5);
+                              clothes=random.nextInt(5);
+                              accessory=random.nextInt(5);
+
+                              message="🎉 랜덤 스타일 완성!";
+
+                          } else if(which==1) {
+
+                              hair=0;
+                              face=0;
+                              clothes=0;
+                              accessory=0;
+
+                              message="처음 모습으로 돌아왔어요.";
+
+                          } else if(which==2) {
+
+                              save.edit()
+                                      .putInt("hair",hair)
+                                      .putInt("face",face)
+                                      .putInt("clothes",clothes)
+                                      .putInt("accessory",accessory)
+                                      .apply();
+
+                              message="💾 스타일을 저장했어요!";
+                          }
+
+                          invalidate();
+                      }
+
+                      return true;
+                  }
+              }
           }
-
-
-          /* =========================
-             시간 초과
-          ========================= */
-
-
-          function timeout() {
-
-
-              if (!choosing)
-                  return;
-
-
-              choosing = false;
-
-
-              buttons(false);
-
-
-              computerScore++;
-
-
-              computerFace.textContent =
-                  "😎";
-
-
-              playerFace.textContent =
-                  "😭";
-
-
-              computerHand.textContent =
-                  "✊";
-
-
-              playerHand.textContent =
-                  "❔";
-
-
-              computerHand.className =
-                  "hand";
-
-
-              playerHand.className =
-                  "hand";
-
-
-              result.textContent =
-                  "기권패";
-
-
-              info.textContent =
-                  "시간 내에 선택하지 못했어요";
-
-
-              score.textContent =
-
-                  "컴퓨터 " +
-                  computerScore +
-                  " : " +
-                  playerScore +
-                  " 사람";
-
-
-              setTimeout(() => {
-
-                  startRound();
-
-              }, 1500);
-
-          }
-
-
-          /* =========================
-             게임 재시작
-          ========================= */
-
-
-          function restartGame() {
-
-
-              clearInterval(timer);
-
-              clearTimeout(chantTimer);
-
-
-              computerScore = 0;
-
-              playerScore = 0;
-
-              round = 0;
-
-
-              score.textContent =
-                  "컴퓨터 0 : 0 사람";
-
-
-              startRound();
-
-          }
-
-
-          /* =========================
-             시작
-          ========================= */
-
-
-          buttons(false);
-
-
-          setTimeout(() => {
-
-              startRound();
-
-          }, 300);
-
-
-          </script>
-
-
-          </body>
-
-          </html>
           EOF
 
-
-      # ==============================
-      # Gradle 설치
-      # ==============================
+      - name: JDK 17 설정
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Gradle 설치
-        shell: bash
-        run: |
-
-          wget -q \
-            https://services.gradle.org/distributions/gradle-8.9-bin.zip
-
-          unzip -q gradle-8.9-bin.zip
-
-          echo "$PWD/gradle-8.9/bin" \
-            >> "$GITHUB_PATH"
-
-
-      # ==============================
-      # APK 빌드
-      # ==============================
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.6"
 
       - name: APK 빌드
-        run: |
-
-          gradle assembleDebug --no-daemon
-
-
-      # ==============================
-      # APK 업로드
-      # ==============================
+        run: gradle :app:assembleDebug
 
       - name: APK 업로드
         uses: actions/upload-artifact@v4
-
         with:
+          name: character-dress-up-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+```
 
-          name: RPC-APK
-
-          path:
-            app/build/outputs/apk/debug/app-debug.apk
