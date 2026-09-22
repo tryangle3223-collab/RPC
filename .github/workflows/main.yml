@@ -145,7 +145,6 @@ jobs:
 
                   Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
                   Random random = new Random();
-
                   SharedPreferences save;
 
                   int category = 0;
@@ -155,22 +154,21 @@ jobs:
                   int accessory = 0;
 
                   String message = "나만의 캐릭터를 꾸며보세요!";
+                  int purple = Color.rgb(124,92,252);
 
                   String[][] names = {
-                      {"단발", "긴머리", "포니", "양갈래", "곱슬"},
-                      {"미소", "윙크", "하트눈", "졸림", "놀람"},
-                      {"후드", "원피스", "티셔츠", "정장", "파자마"},
-                      {"없음", "안경", "왕관", "리본", "별"}
+                      {"단발","긴머리","포니","양갈래","곱슬"},
+                      {"미소","윙크","하트눈","졸림","놀람"},
+                      {"후드","원피스","티셔츠","정장","파자마"},
+                      {"없음","안경","왕관","리본","별"}
                   };
-
-                  int purple = Color.rgb(124,92,252);
 
                   DressUpView(Context context) {
                       super(context);
 
                       save = context.getSharedPreferences(
-                              "character",
-                              Context.MODE_PRIVATE
+                          "character",
+                          Context.MODE_PRIVATE
                       );
 
                       hair = save.getInt("hair",0);
@@ -183,63 +181,74 @@ jobs:
 
                   float d(float v) {
                       return v * getResources()
-                              .getDisplayMetrics().density;
+                          .getDisplayMetrics().density;
                   }
 
-                  void text(Canvas c,String s,float size,int color,
-                            float x,float y,boolean bold) {
-
+                  void text(
+                      Canvas c,
+                      String s,
+                      float size,
+                      int color,
+                      float x,
+                      float y,
+                      boolean bold
+                  ) {
                       p.setStyle(Paint.Style.FILL);
                       p.setColor(color);
                       p.setTextSize(d(size));
-                      p.setTypeface(Typeface.create(
+                      p.setTypeface(
+                          Typeface.create(
                               "sans",
                               bold ? Typeface.BOLD : Typeface.NORMAL
-                      ));
-
+                          )
+                      );
                       c.drawText(s,x,y,p);
                   }
 
-                  void centerText(Canvas c,String s,float size,
-                                  int color,float x,float y) {
-
+                  void centerText(
+                      Canvas c,
+                      String s,
+                      float size,
+                      int color,
+                      float x,
+                      float y
+                  ) {
                       p.setTextSize(d(size));
                       p.setTypeface(Typeface.DEFAULT_BOLD);
                       p.setColor(color);
 
                       c.drawText(
-                              s,
-                              x - p.measureText(s)/2,
-                              y,
-                              p
+                          s,
+                          x - p.measureText(s)/2,
+                          y,
+                          p
                       );
                   }
 
                   @Override
                   protected void onDraw(Canvas c) {
-
                       super.onDraw(c);
 
                       int w = getWidth();
 
                       text(
-                              c,
-                              "✨ 캐릭터 꾸미기",
-                              24,
-                              Color.rgb(40,35,50),
-                              d(20),
-                              d(40),
-                              true
+                          c,
+                          "✨ 캐릭터 꾸미기",
+                          24,
+                          Color.rgb(40,35,50),
+                          d(20),
+                          d(40),
+                          true
                       );
 
                       text(
-                              c,
-                              "나만의 캐릭터를 만들어 보세요",
-                              13,
-                              Color.rgb(110,103,125),
-                              d(20),
-                              d(63),
-                              false
+                          c,
+                          "나만의 캐릭터를 만들어 보세요",
+                          13,
+                          Color.rgb(110,103,125),
+                          d(20),
+                          d(63),
+                          false
                       );
 
                       drawCharacter(c,w);
@@ -253,53 +262,50 @@ jobs:
                       p.setColor(Color.WHITE);
 
                       c.drawRoundRect(
-                              d(14),
-                              d(82),
-                              w-d(14),
-                              d(360),
-                              d(24),
-                              d(24),
-                              p
+                          d(14),
+                          d(82),
+                          w-d(14),
+                          d(360),
+                          d(24),
+                          d(24),
+                          p
                       );
 
                       float cx = w/2f;
                       float cy = d(218);
 
-                      // 몸
                       int[] body = {
-                              Color.rgb(105,145,220),
-                              Color.rgb(242,125,155),
-                              Color.rgb(110,190,160),
-                              Color.rgb(105,105,120),
-                              Color.rgb(170,135,210)
+                          Color.rgb(105,145,220),
+                          Color.rgb(242,125,155),
+                          Color.rgb(110,190,160),
+                          Color.rgb(105,105,120),
+                          Color.rgb(170,135,210)
                       };
 
                       p.setColor(body[clothes]);
 
                       c.drawRoundRect(
-                              cx-d(60),
-                              cy+d(55),
-                              cx+d(60),
-                              cy+d(135),
-                              d(30),
-                              d(30),
-                              p
+                          cx-d(60),
+                          cy+d(55),
+                          cx+d(60),
+                          cy+d(135),
+                          d(30),
+                          d(30),
+                          p
                       );
 
-                      // 목
                       p.setColor(Color.rgb(250,210,180));
 
                       c.drawRoundRect(
-                              cx-d(15),
-                              cy+d(30),
-                              cx+d(15),
-                              cy+d(65),
-                              d(8),
-                              d(8),
-                              p
+                          cx-d(15),
+                          cy+d(30),
+                          cx+d(15),
+                          cy+d(65),
+                          d(8),
+                          d(8),
+                          p
                       );
 
-                      // 얼굴
                       p.setColor(Color.rgb(255,220,190));
                       c.drawCircle(cx,cy,d(62),p);
 
@@ -308,12 +314,12 @@ jobs:
                       drawAccessory(c,cx,cy);
 
                       centerText(
-                              c,
-                              message,
-                              14,
-                              Color.rgb(86,75,105),
-                              cx,
-                              d(338)
+                          c,
+                          message,
+                          14,
+                          Color.rgb(86,75,105),
+                          cx,
+                          d(338)
                       );
                   }
 
@@ -326,13 +332,13 @@ jobs:
                           c.drawCircle(x,y-d(42),d(50),p);
 
                           c.drawRoundRect(
-                                  x-d(52),
-                                  y-d(42),
-                                  x+d(52),
-                                  y+d(8),
-                                  d(25),
-                                  d(25),
-                                  p
+                              x-d(52),
+                              y-d(42),
+                              x+d(52),
+                              y+d(8),
+                              d(25),
+                              d(25),
+                              p
                           );
 
                       } else if(hair==1) {
@@ -340,23 +346,23 @@ jobs:
                           c.drawCircle(x,y-d(42),d(52),p);
 
                           c.drawRoundRect(
-                                  x-d(54),
-                                  y-d(45),
-                                  x-d(27),
-                                  y+d(70),
-                                  d(18),
-                                  d(18),
-                                  p
+                              x-d(54),
+                              y-d(45),
+                              x-d(27),
+                              y+d(70),
+                              d(18),
+                              d(18),
+                              p
                           );
 
                           c.drawRoundRect(
-                                  x+d(27),
-                                  y-d(45),
-                                  x+d(54),
-                                  y+d(70),
-                                  d(18),
-                                  d(18),
-                                  p
+                              x+d(27),
+                              y-d(45),
+                              x+d(54),
+                              y+d(70),
+                              d(18),
+                              d(18),
+                              p
                           );
 
                       } else if(hair==2) {
@@ -387,21 +393,21 @@ jobs:
                           p.setStyle(Paint.Style.FILL);
 
                           c.drawCircle(
-                                  x-d(22),
-                                  y-d(3),
-                                  d(7),
-                                  p
+                              x-d(22),
+                              y-d(3),
+                              d(7),
+                              p
                           );
 
-                          p.setStrokeWidth(d(4));
                           p.setStyle(Paint.Style.STROKE);
+                          p.setStrokeWidth(d(4));
 
                           c.drawLine(
-                                  x+d(15),
-                                  y-d(3),
-                                  x+d(30),
-                                  y-d(3),
-                                  p
+                              x+d(15),
+                              y-d(3),
+                              x+d(30),
+                              y-d(3),
+                              p
                           );
 
                       } else if(face==2) {
@@ -418,37 +424,19 @@ jobs:
                           p.setStrokeWidth(d(4));
 
                           c.drawLine(
-                                  x-d(29),
-                                  y,
-                                  x-d(14),
-                                  y,
-                                  p
+                              x-d(29),
+                              y,
+                              x-d(14),
+                              y,
+                              p
                           );
 
                           c.drawLine(
-                                  x+d(14),
-                                  y,
-                                  x+d(29),
-                                  y,
-                                  p
-                          );
-
-                      } else if(face==4) {
-
-                          p.setStyle(Paint.Style.FILL);
-
-                          c.drawCircle(
-                                  x-d(22),
-                                  y-d(3),
-                                  d(7),
-                                  p
-                          );
-
-                          c.drawCircle(
-                                  x+d(22),
-                                  y-d(3),
-                                  d(7),
-                                  p
+                              x+d(14),
+                              y,
+                              x+d(29),
+                              y,
+                              p
                           );
 
                       } else {
@@ -456,17 +444,17 @@ jobs:
                           p.setStyle(Paint.Style.FILL);
 
                           c.drawCircle(
-                                  x-d(22),
-                                  y-d(3),
-                                  d(7),
-                                  p
+                              x-d(22),
+                              y-d(3),
+                              d(7),
+                              p
                           );
 
                           c.drawCircle(
-                                  x+d(22),
-                                  y-d(3),
-                                  d(7),
-                                  p
+                              x+d(22),
+                              y-d(3),
+                              d(7),
+                              p
                           );
                       }
 
@@ -474,18 +462,18 @@ jobs:
                       p.setStrokeWidth(d(3));
 
                       RectF mouth = new RectF(
-                              x-d(15),
-                              y+d(8),
-                              x+d(15),
-                              y+d(30)
+                          x-d(15),
+                          y+d(8),
+                          x+d(15),
+                          y+d(30)
                       );
 
                       c.drawArc(
-                              mouth,
-                              face==3 ? 0 : 20,
-                              face==3 ? 180 : 140,
-                              false,
-                              p
+                          mouth,
+                          face==3 ? 0 : 20,
+                          face==3 ? 180 : 140,
+                          false,
+                          p
                       );
 
                       p.setStyle(Paint.Style.FILL);
@@ -498,15 +486,15 @@ jobs:
                       path.moveTo(x,y+d(9));
 
                       path.cubicTo(
-                              x-d(15),y-d(3),
-                              x-d(8),y-d(15),
-                              x,y-d(5)
+                          x-d(15),y-d(3),
+                          x-d(8),y-d(15),
+                          x,y-d(5)
                       );
 
                       path.cubicTo(
-                              x+d(8),y-d(15),
-                              x+d(15),y-d(3),
-                              x,y+d(9)
+                          x+d(8),y-d(15),
+                          x+d(15),y-d(3),
+                          x,y+d(9)
                       );
 
                       c.drawPath(path,p);
@@ -521,21 +509,21 @@ jobs:
                           p.setColor(Color.DKGRAY);
 
                           c.drawRoundRect(
-                                  x-d(35),y-d(17),
-                                  x-d(5),y+d(7),
-                                  d(7),d(7),p
+                              x-d(35),y-d(17),
+                              x-d(5),y+d(7),
+                              d(7),d(7),p
                           );
 
                           c.drawRoundRect(
-                                  x+d(5),y-d(17),
-                                  x+d(35),y+d(7),
-                                  d(7),d(7),p
+                              x+d(5),y-d(17),
+                              x+d(35),y+d(7),
+                              d(7),d(7),p
                           );
 
                           c.drawLine(
-                                  x-d(5),y-d(5),
-                                  x+d(5),y-d(5),
-                                  p
+                              x-d(5),y-d(5),
+                              x+d(5),y-d(5),
+                              p
                           );
 
                           p.setStyle(Paint.Style.FILL);
@@ -560,11 +548,17 @@ jobs:
                           p.setColor(Color.rgb(240,90,135));
 
                           c.drawCircle(
-                                  x-d(42),y-d(45),d(15),p
+                              x-d(42),
+                              y-d(45),
+                              d(15),
+                              p
                           );
 
                           c.drawCircle(
-                                  x-d(25),y-d(45),d(15),p
+                              x-d(25),
+                              y-d(45),
+                              d(15),
+                              p
                           );
 
                       } else if(accessory==4) {
@@ -576,17 +570,19 @@ jobs:
                           for(int i=0;i<10;i++) {
 
                               double a =
-                                      -Math.PI/2 +
-                                      i*Math.PI/5;
+                                  -Math.PI/2 +
+                                  i*Math.PI/5;
 
                               float r =
-                                      i%2==0 ? d(15) : d(7);
+                                  i%2==0 ? d(15) : d(7);
 
                               float px =
-                                      x+d(52)+(float)Math.cos(a)*r;
+                                  x+d(52) +
+                                  (float)Math.cos(a)*r;
 
                               float py =
-                                      y-d(45)+(float)Math.sin(a)*r;
+                                  y-d(45) +
+                                  (float)Math.sin(a)*r;
 
                               if(i==0)
                                   star.moveTo(px,py);
@@ -601,8 +597,12 @@ jobs:
 
                   void drawCategories(Canvas c,int w) {
 
-                      String[] names =
-                              {"머리","표정","옷","소품"};
+                      String[] tabs={
+                          "머리",
+                          "표정",
+                          "옷",
+                          "소품"
+                      };
 
                       float gap=d(7);
                       float left=d(14);
@@ -611,30 +611,30 @@ jobs:
 
                       for(int i=0;i<4;i++) {
 
-                          float x =
-                                  left+i*(bw+gap);
+                          float x=
+                              left+i*(bw+gap);
 
                           p.setColor(
-                                  i==category
-                                  ? purple
-                                  : Color.WHITE
+                              i==category
+                              ? purple
+                              : Color.WHITE
                           );
 
                           c.drawRoundRect(
-                                  x,d(376),
-                                  x+bw,d(420),
-                                  d(14),d(14),p
+                              x,d(376),
+                              x+bw,d(420),
+                              d(14),d(14),p
                           );
 
                           centerText(
-                                  c,
-                                  names[i],
-                                  14,
-                                  i==category
-                                  ? Color.WHITE
-                                  : Color.rgb(82,75,98),
-                                  x+bw/2,
-                                  d(404)
+                              c,
+                              tabs[i],
+                              14,
+                              i==category
+                              ? Color.WHITE
+                              : Color.rgb(82,75,98),
+                              x+bw/2,
+                              d(404)
                           );
                       }
                   }
@@ -648,58 +648,64 @@ jobs:
                       float bw=(total-gap*2)/3;
                       float bh=d(52);
 
-                      int selected =
-                              category==0 ? hair :
-                              category==1 ? face :
-                              category==2 ? clothes :
-                              accessory;
+                      int selected;
+
+                      if(category==0)
+                          selected=hair;
+                      else if(category==1)
+                          selected=face;
+                      else if(category==2)
+                          selected=clothes;
+                      else
+                          selected=accessory;
 
                       for(int i=0;i<5;i++) {
 
                           int row=i/3;
                           int col=i%3;
 
-                          float x =
-                                  left+col*(bw+gap);
+                          float x=
+                              left+col*(bw+gap);
 
-                          float y =
-                                  top+row*(bh+gap);
+                          float y=
+                              top+row*(bh+gap);
 
                           p.setColor(
-                                  i==selected
-                                  ? Color.rgb(235,229,255)
-                                  : Color.WHITE
+                              i==selected
+                              ? Color.rgb(235,229,255)
+                              : Color.WHITE
                           );
 
                           c.drawRoundRect(
-                                  x,y,
-                                  x+bw,y+bh,
-                                  d(14),d(14),p
+                              x,y,
+                              x+bw,y+bh,
+                              d(14),d(14),p
                           );
 
                           p.setStyle(Paint.Style.STROKE);
                           p.setStrokeWidth(d(1.5f));
+
                           p.setColor(
-                                  i==selected
-                                  ? purple
-                                  : Color.rgb(226,221,235)
+                              i==selected
+                              ? purple
+                              : Color.rgb(226,221,235)
                           );
 
                           c.drawRoundRect(
-                                  x,y,
-                                  x+bw,y+bh,
-                                  d(14),d(14),p
+                              x,y,
+                              x+bw,y+bh,
+                              d(14),d(14),p
                           );
 
                           p.setStyle(Paint.Style.FILL);
 
                           centerText(
-                                  c,
-                                  names[category][i],
-                                  13,
-                                  Color.rgb(64,58,77),
-                                  x+bw/2,
-                                  y+d(32)
+                              c,
+                              names[category][i],
+                              13,
+                              Color.rgb(64,58,77),
+                              x+bw/2,
+                              y+d(32)
                           );
                       }
                   }
@@ -713,37 +719,37 @@ jobs:
                       float bw=(total-gap*2)/3;
 
                       String[] labels={
-                              "🎲 랜덤",
-                              "↺ 초기화",
-                              "💾 저장"
+                          "랜덤",
+                          "초기화",
+                          "저장"
                       };
 
                       for(int i=0;i<3;i++) {
 
-                          float x =
-                                  left+i*(bw+gap);
+                          float x=
+                              left+i*(bw+gap);
 
                           p.setColor(
-                                  i==2
-                                  ? purple
-                                  : Color.WHITE
+                              i==2
+                              ? purple
+                              : Color.WHITE
                           );
 
                           c.drawRoundRect(
-                                  x,y,
-                                  x+bw,y+d(48),
-                                  d(15),d(15),p
+                              x,y,
+                              x+bw,y+d(48),
+                              d(15),d(15),p
                           );
 
                           centerText(
-                                  c,
-                                  labels[i],
-                                  13,
-                                  i==2
-                                  ? Color.WHITE
-                                  : Color.rgb(70,63,82),
-                                  x+bw/2,
-                                  y+d(30)
+                              c,
+                              labels[i],
+                              13,
+                              i==2
+                              ? Color.WHITE
+                              : Color.rgb(70,63,82),
+                              x+bw/2,
+                              y+d(30)
                           );
                       }
                   }
@@ -756,7 +762,6 @@ jobs:
 
                       float x=e.getX();
                       float y=e.getY();
-
                       int w=getWidth();
 
                       // 카테고리
@@ -770,10 +775,9 @@ jobs:
                           for(int i=0;i<4;i++) {
 
                               float bx=
-                                      left+i*(bw+gap);
+                                  left+i*(bw+gap);
 
-                              if(x>=bx &&
-                                 x<=bx+bw) {
+                              if(x>=bx && x<=bx+bw) {
 
                                   category=i;
                                   invalidate();
@@ -782,7 +786,7 @@ jobs:
                           }
                       }
 
-                      // 아이템
+                      // 꾸미기 아이템
                       float top=d(432);
                       float gap=d(8);
                       float left=d(14);
@@ -796,15 +800,17 @@ jobs:
                           int col=i%3;
 
                           float bx=
-                                  left+col*(bw+gap);
+                              left+col*(bw+gap);
 
                           float by=
-                                  top+row*(bh+gap);
+                              top+row*(bh+gap);
 
-                          if(x>=bx &&
-                             x<=bx+bw &&
-                             y>=by &&
-                             y<=by+bh) {
+                          if(
+                              x>=bx &&
+                              x<=bx+bw &&
+                              y>=by &&
+                              y<=by+bh
+                          ) {
 
                               if(category==0)
                                   hair=i;
@@ -815,9 +821,9 @@ jobs:
                               else
                                   accessory=i;
 
-                              message =
-                                      names[category][i]
-                                      + " 선택!";
+                              message=
+                                  names[category][i]+
+                                  " 선택!";
 
                               invalidate();
                               return true;
@@ -830,8 +836,8 @@ jobs:
 
                       if(y>=by && y<=by+d(48)) {
 
-                          int which =
-                                  (int)((x-left)/(bw2+gap));
+                          int which=
+                              (int)((x-left)/(bw2+gap));
 
                           if(which==0) {
 
@@ -840,7 +846,7 @@ jobs:
                               clothes=random.nextInt(5);
                               accessory=random.nextInt(5);
 
-                              message="🎉 랜덤 스타일 완성!";
+                              message="랜덤 스타일 완성!";
 
                           } else if(which==1) {
 
@@ -854,13 +860,13 @@ jobs:
                           } else if(which==2) {
 
                               save.edit()
-                                      .putInt("hair",hair)
-                                      .putInt("face",face)
-                                      .putInt("clothes",clothes)
-                                      .putInt("accessory",accessory)
-                                      .apply();
+                                  .putInt("hair",hair)
+                                  .putInt("face",face)
+                                  .putInt("clothes",clothes)
+                                  .putInt("accessory",accessory)
+                                  .apply();
 
-                              message="💾 스타일을 저장했어요!";
+                              message="스타일을 저장했어요!";
                           }
 
                           invalidate();
@@ -878,7 +884,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Gradle 설치
+      - name: Gradle 설정
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.6"
@@ -892,5 +898,3 @@ jobs:
           name: character-dress-up-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-```
-
